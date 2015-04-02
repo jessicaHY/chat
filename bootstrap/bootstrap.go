@@ -5,6 +5,8 @@ import (
 	"github.com/martini-contrib/render"
 	"net/http"
 	"chatroom/config"
+	"runtime"
+	"path"
 )
 
 var methods = []func(){}
@@ -15,13 +17,16 @@ func Register(fn func()) {
 
 func Start(port string, onStart func()) {
 
-	m := martini.Classic()
+	resDir := "resources/views"
+	_, filename, _, _ := runtime.Caller(1)
 
+	m := martini.Classic()
 	m.Use(martini.Static("public"))
+	m.Use(martini.Static("assets"))
 	m.Use(render.Renderer(render.Options{
-		Charset: 	"UTF-8", // Sets encoding for json and html content-types. Default is "UTF-8".
+		Charset: 	"UTF-8",
 		Delims:  	render.Delims{"${", "}"},
-		Directory:	"resources/views",
+		Directory:	path.Join(path.Dir(filename), resDir),
 	}))
 
 	config.MappingController(m)

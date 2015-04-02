@@ -1,4 +1,10 @@
 {
-  "name": "application-name",
-  "version": "0.0.1"
+  "name": "chatroom",
+  "version": "0.0.1",
+  "dependencies": {
+    "gulp":"",
+    "gulp-ruby-sass":"",
+    "gulp-react":"",
+    "gulp-minify-css":""
+  }
 }
