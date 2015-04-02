@@ -1,0 +1,1 @@
+define(["jquery"],function(n){_inlineCodes&&_inlineCodes.length&&n.map(_inlineCodes,function(n){"function"==typeof n&&n()})});

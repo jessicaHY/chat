@@ -1,0 +1,1 @@
+define(["jquery","angular","./module"],function(n,e,i){i.directive("talkForm",function(){return{link:function(n,e,i){var t=i.talkForm;e.find("button").click(function(){n.sendMessage(t)})}}})});
