@@ -7,6 +7,12 @@ ${define "import"}
         deps : ["main"]
     }
 </script>
-<script src="/components/jquery/dist/jquery.min.js"></script>
+<script>
+    var require = {
+        baseUrl: "/js",
+        waitSeconds: 15,
+        deps : ["main"]
+    };
+</script>
 <script src="/components/requirejs/require.js"></script>
 ${end}

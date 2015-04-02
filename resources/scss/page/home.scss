@@ -1,0 +1,115 @@
+html, body, .wrap {
+  height: 100%;
+}
+.wrap {
+  @include flex-flow(column);
+  .top, .bottom {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    @include display(flex);
+    @include flex-flow(row);
+  }
+
+  .top {
+    top: 10px;
+    bottom: 130px;
+    min-height: 300px;
+  }
+  .bottom {
+    bottom: 10px;
+    height: 120px;
+  }
+}
+
+.author-talk, .user-talk, .author-form, .user-form {
+  width: 50%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 3px;
+  background: #fff;
+}
+
+.author-talk, .user-talk {
+  .bd {
+    background: #f8f8f8;
+    height: 100%;
+    padding: 1.5em;
+  }
+  li {
+    margin-bottom: 20px;
+    @include clearfix;
+  }
+  article {
+    display: inline-block;
+  }
+  .talk {
+    max-width: 80%;
+    .content {
+      padding: 6px 16px;
+      border-radius: 5px;
+    }
+  }
+  .time {
+    text-align: center;
+    color: #999;
+    font-size: 1.2rem;
+  }
+}
+
+.author-talk {
+  .bd {
+    background: #EBF0DF;
+  }
+  .talk {
+    float: right;
+    .content {
+      background: #439cd8;
+      color: #fff;
+    }
+  }
+  .chapter {
+    text-indent: 2em;
+    line-height: 1.8em;
+    font-size: 1.8rem;
+  }
+}
+
+.user-talk {
+  .talk {
+    float: left;
+    img {
+      float: left;
+      width: 50px;
+      height: 50px;
+      margin-top: -3px;
+      padding: 1px;
+      border: 1px solid #eee;
+      border-radius: 100%;
+      background: #fff;
+      margin-right: 10px;
+    }
+    .name {
+      font-size: 1.2rem;
+      color: #999;
+    }
+    .content {
+      margin: 6px 0 0 60px;
+      background: #fff;
+      border: 1px solid #d8d8d8;
+    }
+  }
+}
+
+.author-form, .user-form {
+  .bd {
+    height: 100%;
+    textarea {
+      height: 60px;
+      margin-bottom: 10px;
+    }
+    button {
+      float: right;
+    }
+  }
+}

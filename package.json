@@ -5,6 +5,8 @@
     "gulp":"",
     "gulp-ruby-sass":"",
     "gulp-react":"",
-    "gulp-minify-css":""
+    "gulp-minify-css":"",
+    "gulp-uglify":"",
+    "amd-optimize":""
   }
 }

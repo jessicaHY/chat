@@ -4,8 +4,54 @@
     <title>Index</title>
     ${template "basic"}
 </head>
-<body class="index">
-    <h1>Hello world</h1>
+<body class="index" ng-controller="homeCtrl">
+    <div class="wrap">
+        <div class="top">
+            <section class="mod author-talk" id="AuthorTalk">
+                <div class="bd">
+                    <ul>
+                        <li ng-repeat="talk in authorTalkList">
+                            <article class="talk">
+                                <div class="content" ng-bind-html="talk.Content"></div>
+                            </article>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <section class="mod user-talk" id="UserTalk">
+                <div class="bd">
+                    <ul>
+                        <li ng-repeat="talk in userTalkList">
+                            <article class="talk">
+                                <img ng-src="{{talk.UserPic}}" alt=""/>
+                                <span class="name" ng-bind-html="talk.Name"></span>
+                                <div class="content" ng-bind-html="talk.Content"></div>
+                            </article>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+        <div class="bottom">
+            <section class="mod author-form" id="AuthorForm" talk-form="{{UserType.Author}}">
+                <div class="bd">
+                    <textarea class="form-control" ng-model="authorContent" placeholder="Author:"></textarea>
+                    <button class="btn btn-primary disabled" ng-class="{disabled: !authorContent }">Send</button>
+                </div>
+            </section>
+            <section class="mod user-form" id="UserForm" talk-form="{{UserType.User}}">
+                <div class="bd">
+                    <textarea class="form-control" ng-model="userContent" placeholder="User:"></textarea>
+                    <button class="btn btn-primary disabled" ng-class="{disabled: !userContent }">Send</button>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+        _inlineRun(function(){
+            require(['controller/homeCtrl']);
+        })
+    </script>
     ${template "import"}
 </body>
 </html>

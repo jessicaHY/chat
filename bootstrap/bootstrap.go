@@ -17,18 +17,19 @@ func Register(fn func()) {
 
 func Start(port string, onStart func()) {
 
-	resDir := "resources/views"
+
 	_, filename, _, _ := runtime.Caller(1)
+	exeDir := path.Dir(filename)
 
 	m := martini.Classic()
-	m.Use(martini.Static("public"))
-	m.Use(martini.Static("assets"))
+
 	m.Use(render.Renderer(render.Options{
 		Charset: 	"UTF-8",
 		Delims:  	render.Delims{"${", "}"},
-		Directory:	path.Join(path.Dir(filename), resDir),
+		Directory:	path.Join(exeDir, "resources/views"),
 	}))
 
+	m.Use(martini.Static(path.Join(exeDir, "public")))
 	config.MappingController(m)
 
 	http.Handle("/", m)

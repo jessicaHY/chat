@@ -2,14 +2,13 @@ package webSocket
 
 import (
 	"github.com/go-martini/martini"
-	"king/helper"
-	"king/utils/JSON"
+	"chatroom/helper"
+	"chatroom/utils/JSON"
 	"sync"
 	"time"
 )
 
 type MessageType int
-
 const (
 	Info MessageType = iota
 	Success
@@ -17,11 +16,16 @@ const (
 	Danger
 )
 
-var onEmitCallback = map[string]func() JSON.Type{}
+type Message struct {
+	Method string      `json:"method"`
+	Params interface{} `json:"data"`
+}
+
+var onEmitCallback = map[string]func(*Message) JSON.Type{}
 var onAppend = func(int) {}
 var onOut = func(int) {}
 
-func OnEmit(name string, callback func() JSON.Type) {
+func OnEmit(name string, callback func(*Message) JSON.Type) {
 	if _, found := onEmitCallback[name]; found {
 		return
 	}
@@ -34,11 +38,6 @@ func OnAppend(callback func(int)) {
 
 func OnOut(callback func(int)) {
 	onOut = callback
-}
-
-type Message struct {
-	Method string      `json:"method"`
-	Params interface{} `json:"data"`
 }
 
 type socketClient struct {
@@ -80,7 +79,7 @@ func Emit(client *socketClient, msg *Message) {
 	if method == "broadcast" {
 		BroadCast(client, msg)
 	} else if _, found := onEmitCallback[method]; method != "" && found {
-		client.out <- &Message{method, onEmitCallback[method]()}
+		client.out <- &Message{method, onEmitCallback[method](msg)}
 	} else {
 		client.out <- &Message{method, helper.Error("method undefined")}
 	}
@@ -146,7 +145,7 @@ func loopPushFrame() {
 			client := value.(*socketClient)
 			if client != nil && client.message != nil {
 				if method := client.message.Method; method != "" {
-					client.out <- &Message{method, onEmitCallback[method]()}
+					client.out <- &Message{method, onEmitCallback[method](client.message)}
 				}
 			}
 			return false
