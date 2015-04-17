@@ -1,9 +1,11 @@
 package redis
 
 import (
+	"chatroom/helper"
+	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/golang/glog"
 	"time"
-	"strconv"
 )
 
 var (
@@ -11,27 +13,31 @@ var (
 )
 
 type MessageType int
+
 const (
 	UserMessage MessageType = iota
 	AuthorMessage
 )
 const (
 	AuthorPre = "author:"
-	UserPre = "user:"
+	UserPre   = "user:"
 )
+
+var onEmpity = func(int64) bool { return false }
+
 func init() {
-	pool = &redis.Pool {
-		MaxIdle: 3,
+	pool = &redis.Pool{
+		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", "127.0.0.1:6379")
 			if err != nil {
 				return nil, err
 			}
-//			if _, err := c.Do("AUTH",""); err != nil {
-//				c.Close()
-//				return nil, err
-//			}
+			//			if _, err := c.Do("AUTH",""); err != nil {
+			//				c.Close()
+			//				return nil, err
+			//			}
 			return c, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
@@ -41,58 +47,97 @@ func init() {
 	}
 }
 
-func ZAddUserMsg(roomId int, content string) (int, error) {
+func OnEmpity(callback func(int64) bool) {
+	onEmpity = callback
+}
+
+func ZAddUserMsg(roomId int64, content string) (int, error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := UserPre + strconv.Itoa(roomId)
+	key := UserPre + helper.Itoa64(roomId)
 	num, err := conn.Do("ZCARD", key)
 	if err != nil {
-		return  0, err
+		return 0, err
 	}
 	return redis.Int(conn.Do("ZADD", key, num, content))
 }
 
-func ZAddAuthorMsg(roomId int, msgId interface {}, content string) (int, error) {
+func ZAddAuthorMsg(roomId int64, msgId interface{}, content string) (int, error) {
+	checkAuthroMsgExisted(roomId)
 	conn := pool.Get()
 	defer conn.Close()
-	return redis.Int(conn.Do("ZADD", AuthorPre + strconv.Itoa(roomId), msgId, content))
+	return redis.Int(conn.Do("ZADD", AuthorPre+helper.Itoa64(roomId), msgId, content))
 }
 
-func ZRange(mType MessageType, roomId int, start int, stop int) ([]string, error) {
+func ZAddAuthorMsgs(roomId int64, m map[int64]string) (int, error) {
+	//这里不需要check，该方法是批量初始化redis里的数据
+	fmt.Println("ZAddAuthorMsgs....")
+	key := AuthorPre + helper.Itoa64(roomId)
 	conn := pool.Get()
 	defer conn.Close()
-	switch mType{
+	conn.Send("MULTI")
+	for i, v := range m {
+		conn.Send("ZADD", key, i, v)
+	}
+	replys, err := redis.Values(conn.Do("EXEC"))
+	return len(replys), err
+}
+
+func ZRange(mType MessageType, roomId int64, start int, stop int) ([]string, error) {
+	conn := pool.Get()
+	defer conn.Close()
+	switch mType {
 	case UserMessage:
-		return  redis.Strings(conn.Do("ZRANGE", UserPre + strconv.Itoa(roomId), start, stop))
+		return redis.Strings(conn.Do("ZRANGE", UserPre+helper.Itoa64(roomId), start, stop))
 	case AuthorMessage:
-		return  redis.Strings(conn.Do("ZRANGE", AuthorPre + strconv.Itoa(roomId), start, stop))
+		checkAuthroMsgExisted(roomId)
+		return redis.Strings(conn.Do("ZRANGE", AuthorPre+helper.Itoa64(roomId), start, stop))
 	}
 	return nil, nil
 }
 
-func Del(roomId int) {
+func Del(roomId int64) {
 	conn := pool.Get()
 	defer conn.Close()
-	conn.Do("DEL", UserPre + strconv.Itoa(roomId))
+	conn.Do("DEL", UserPre+helper.Itoa64(roomId))
 }
 
-func ZCard(roomId int) (int, int, error) {
+func ZCard(roomId int64) (int, int, error) {
 	conn := pool.Get()
 	defer conn.Close()
 
-	err := conn.Send("ZCARD", UserPre + strconv.Itoa(roomId))
+	err := conn.Send("ZCARD", UserPre+helper.Itoa64(roomId))
 	if err != nil {
+		fmt.Println(err)
 		return 0, 0, err
 	}
-	err = conn.Send("ZCARD", AuthorPre + strconv.Itoa(roomId))
+	checkAuthroMsgExisted(roomId)
+	err = conn.Send("ZCARD", AuthorPre+helper.Itoa64(roomId))
 	if err != nil {
+		fmt.Println(err)
 		return 0, 0, err
 	}
 	err = conn.Flush()
 	if err != nil {
+		fmt.Println(err)
 		return 0, 0, err
 	}
 	ucount, err := redis.Int(conn.Receive())
 	acount, err := redis.Int(conn.Receive())
 	return ucount, acount, err
+}
+
+func checkAuthroMsgExisted(roomId int64) {
+	conn := pool.Get()
+	exists, err := redis.Bool(conn.Do("EXISTS", AuthorPre+helper.Itoa64(roomId)))
+	conn.Close()
+
+	if err != nil {
+		fmt.Println(err)
+		glog.Fatalln(err)
+		return
+	}
+	if !exists {
+		onEmpity(roomId)
+	}
 }

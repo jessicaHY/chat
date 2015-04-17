@@ -30,6 +30,11 @@ func Start(port string, onStart func()) {
 	}))
 
 	m.Use(martini.Static(path.Join(exeDir, "public")))
+
+//	m.Use(func(c martini.Context, w http.ResponseWriter, r *http.Request) {
+//		c.SetParams("", 0)
+//	})
+
 	config.MappingController(m)
 
 	http.Handle("/", m)

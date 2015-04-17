@@ -1,62 +1,80 @@
 package webSocket
 
 import (
-	"github.com/go-martini/martini"
-	"chatroom/service/webSocket"
 	"chatroom/helper"
-	"chatroom/utils/JSON"
-	"strconv"
-	"chatroom/service/models"
 	"chatroom/service/httpGet"
+	"chatroom/service/models"
 	"chatroom/service/redis"
-	"github.com/golang/glog"
-	"time"
-	"fmt"
-	"net/http"
+	"chatroom/service/webSocket"
 	"encoding/json"
+	"fmt"
+	"github.com/go-martini/martini"
+	"net/http"
+	"reflect"
+	"time"
 )
 
-var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo)	//缓存用户信息
+var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
 
 type UserMsg struct {
-	Id			int64		`json:"id"`
-	Content 	string		`json:"content"`
-	CreateTime	time.Time	`json:"createTime"`
-	Info		*httpGet.UserInfo	`json:"userInfo"`
+	Id         int64             `json:"id"`
+	Content    string            `json:"content"`
+	CreateTime time.Time         `json:"createTime"`
+	Info       *httpGet.UserInfo `json:"userInfo"`
 }
 
 type Param struct {
-	Next 	bool		`json:"next"`
-	Size 	int		`json:"size`
+	Next bool `json:"next"`
+	Size int  `json:"size`
 }
+
 const (
 	User httpGet.UserType = iota
 	Writer
 	Staff
 )
 const (
-	FIRST_CONTENT_SIZE = 3	//进入聊天室时默认发送几条消息
+	FIRST_CONTENT_SIZE = 3 //进入聊天室时默认发送几条消息
 )
 
-func HandlerSocket(params martini.Params, req *http.Request, receiver <-chan *webSocket.ChatMsg, sender chan<- *webSocket.ChatMsg, done <-chan bool, disconnect chan<- int, err <-chan error) (int,string) {
-	roomId := 0;
-	if rId, err := strconv.Atoi(params["roomId"]); err == nil {
-		roomId = rId
-	}
+func PreCheck(params martini.Params, req *http.Request, context martini.Context, w http.ResponseWriter) {
+	fmt.Println("PreCheck....")
+	roomId := helper.Int64(params["roomId"])
 	fmt.Println(roomId)
-	info := CheckAuthorRight(req, roomId)
-	if info == nil {
-		return http.StatusForbidden, "no login"
+	r, err := models.GetRoom(roomId)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(404)
+		fmt.Fprintf(w, "")
 	}
-	return webSocket.AppendClient(info.Id, roomId, receiver, sender, done, disconnect, err)
+	if r.Status == models.Closed {
+		w.WriteHeader(403)
+		fmt.Fprintf(w, "")
+	}
+	info, _ := httpGet.GetLoginUserInfo(req.Cookies(), roomId)
+	if r.Price > 0 { //免费的未登陆可以进入
+		if info.Code != httpGet.SUCCESS || info.Data.Id <= 0 {
+			w.WriteHeader(403)
+			fmt.Fprintf(w, "no login")
+		}
+		if info.Data.Id != r.UserId && !info.Data.Subscribed {
+			w.WriteHeader(403)
+			fmt.Fprintf(w, "no pay")
+		}
+	}
+	context.Set(reflect.TypeOf(info.Data.Id), reflect.ValueOf(info.Data.Id))
+	context.Set(reflect.TypeOf(roomId), reflect.ValueOf(roomId))
+	//	context.Next()
 }
 
-func CheckAuthorRight(req *http.Request, roomId int) *httpGet.UserInfo {
-	info := &httpGet.UserInfo{}
-	info.CheckAuthorRight(req.Cookies(), roomId)
-	fmt.Println(info)
-	UserInfoMap[info.Id] = info
-	return info
+func HandlerSocket(context martini.Context, receiver <-chan *webSocket.ChatMsg, sender chan<- *webSocket.ChatMsg, done <-chan bool, disconnect chan<- int, errc <-chan error) (int, string) {
+	var rId int64 = 0
+	var uId int = 0
+	roomId := context.Get(reflect.TypeOf(rId)).Int()
+	userId := context.Get(reflect.TypeOf(uId)).Int()
+	uId = int(userId)
+	fmt.Println("to handler socket...", roomId, userId)
+	return webSocket.AppendClient(uId, roomId, receiver, sender, done, disconnect, errc)
 }
 
 func GetUserInfo(userId int) *httpGet.UserInfo {
@@ -64,22 +82,24 @@ func GetUserInfo(userId int) *httpGet.UserInfo {
 	if ok {
 		return info
 	}
-	info = &httpGet.UserInfo{}
-	info.GetUserInfo(userId)
-	UserInfoMap[userId] = info
-	return info
+
+	result, err := httpGet.GetUserInfo(userId)
+	if err != nil || result.Code != httpGet.SUCCESS {
+		return nil
+	}
+	UserInfoMap[userId] = result.Data
+	return result.Data
 }
 
-func GetWebSocketChatMsg(messageType redis.MessageType, roomId int, start int, stop int) ([]UserMsg, error) {
+func GetWebSocketChatMsg(messageType redis.MessageType, roomId int64, start int, stop int) ([]UserMsg, error) {
 	replys, err := redis.ZRange(messageType, roomId, start, stop)
 	if err != nil {
 		return nil, err
 	}
 	msgs := []UserMsg{}
-	for _,v := range replys {
+	for _, v := range replys {
 		msg := UserMsg{}
 		err = json.Unmarshal([]byte(v), &msg)
-		fmt.Println(msg)
 		if err == nil {
 			msgs = append(msgs, msg)
 		} else {
@@ -87,150 +107,4 @@ func GetWebSocketChatMsg(messageType redis.MessageType, roomId int, start int, s
 		}
 	}
 	return msgs, nil
-}
-
-func init() {
-
-	webSocket.OnAppend(func(client *webSocket.SocketClient, r *webSocket.Room) {
-		//发三条信息
-		ucount, acount, _ := redis.ZCard(r.RoomId)
-		client.UserMsgIndex = ucount
-		if acount > FIRST_CONTENT_SIZE {//确定该client对应的作者信息的起始和结束
-			client.AuthorStartIndex = acount - FIRST_CONTENT_SIZE
-			client.AuthorEndIndex = acount - FIRST_CONTENT_SIZE
-		}
-
-		msgs,err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
-		if err != nil {
-			return
-		}
-		r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msgs})
-		client.AuthorEndIndex += len(msgs)
-	})
-
-	webSocket.OnRemove(func(userId int){
-		delete(UserInfoMap, userId)
-	})
-	//作者发信息
-	webSocket.OnEmit("authorSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		fmt.Println("authorSend")
-		uMsg := &UserMsg{}
-		if err := JSON.ParseToStruct(msg.Params, uMsg); err == nil {
-			//insert into db
-			tMsg := &models.MsgTable{}
-			tMsg.UserId = client.UserId
-			tMsg.RoomId = r.RoomId
-			tMsg.Type = 1
-			tMsg.Content = uMsg.Content
-			err := tMsg.Save();
-			if err != nil {
-				fmt.Println(err)
-				return helper.Error(helper.ParamsError)
-			}
-			uMsg.Id = tMsg.Id
-			uMsg.CreateTime = tMsg.CreateTime
-			uMsg.Info = GetUserInfo(tMsg.UserId)
-			fmt.Println(uMsg)
-
-			//save to redis
-			b, err := json.Marshal(uMsg)
-			if err != nil {
-				fmt.Println(err)
-				return helper.Error(helper.ParamsError)
-			}
-			_, err = redis.ZAddAuthorMsg(r.RoomId, tMsg.Id, string(b))
-			if err != nil {
-				fmt.Println(err)
-				return helper.Error(helper.ParamsError)
-			}
-			//tell thread to tell everyclient
-			fmt.Println(r.ThreadChannel)
-			select {
-			case r.ThreadChannel <- 1:
-				fmt.Println("to ...runMsgTask")
-				break
-			default:
-				fmt.Println("back msg")
-				break
-			}
-			return helper.Success(JSON.Type{})
-		}
-		return helper.Error(helper.ParamsError)
-	})
-
-	//用户发消息
-	webSocket.OnEmit("userSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		uMsg := &UserMsg{}
-		if err := JSON.ParseToStruct(msg.Params, uMsg); err == nil {
-			uMsg.Id = 0
-			uMsg.CreateTime = time.Now()
-			uMsg.Info = GetUserInfo(client.UserId)
-			fmt.Println(uMsg)
-
-			//save to redis
-			b, err := json.Marshal(uMsg)
-			if err != nil {
-				return helper.Error(helper.ParamsError)
-			}
-			_, err = redis.ZAddUserMsg(r.RoomId, string(b))
-			if err != nil {
-				return helper.Error(helper.ParamsError)
-			}
-			//tell thread to tell everyclient
-			fmt.Println(r.ThreadChannel)
-			select {
-			case r.ThreadChannel <- 1:
-				glog.Infoln("to ...runMsgTask")
-				break
-			default:
-				glog.Infoln("back msg")
-				break
-			}
-			return helper.Success(JSON.Type{})
-		}
-
-		return helper.Error(helper.ParamsError)
-	})
-
-	//用户点击获取更多
-	webSocket.OnEmit("getMessage", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		param := &Param{}
-		if err := JSON.ParseToStruct(msg.Params, param); err == nil {
-			if param.Next {//获取往后的数据
-				//needs to send
-				msgs,err := GetWebSocketChatMsg(redis.UserMessage, r.RoomId, client.UserMsgIndex, -1)
-				if err != nil {
-					return helper.Error(helper.ParamsError)
-				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "userMessage", Params: msgs})
-				client.UserMsgIndex += len(msgs)
-
-				msgs, err = GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
-				if err != nil {
-					return helper.Error(helper.ParamsError)
-				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msgs})
-				client.AuthorEndIndex += len(msgs)
-			} else {//获取之前的作者数据
-				begin := client.AuthorStartIndex - param.Size
-				if begin < 0 {
-					begin = 0
-				}
-				msgs, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorStartIndex, client.AuthorStartIndex)
-				if err != nil {
-					return helper.Error(helper.ParamsError)
-				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msgs})
-				client.AuthorEndIndex += len(msgs)
-			}
-			return helper.Success(JSON.Type{})
-		}
-		return helper.Error(helper.ParamsError)
-	})
-
-	webSocket.OnEmit("publish", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		content := models.PushCompleteRoom(r.RoomId)
-		r.SendSelf(client, &webSocket.ChatMsg{Method: "content", Params: content})
-		return helper.Success(JSON.Type{})
-	})
 }

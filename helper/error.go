@@ -16,6 +16,8 @@ const (
 	EmptyError
 	OfflineError
 	BusyError
+	NoLoginError
+	NoRightError
 )
 
 func NewError(msg string, err ...error) error {
