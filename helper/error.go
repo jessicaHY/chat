@@ -18,6 +18,10 @@ const (
 	BusyError
 	NoLoginError
 	NoRightError
+	ClosedError //直播间已经关闭
+	NeedSubscribeError	//需要购买
+	NetworkError
+	NoNeedError
 )
 
 func NewError(msg string, err ...error) error {
