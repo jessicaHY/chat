@@ -17,20 +17,20 @@ func init() {
 	webSocket.OnAppend(func(client *webSocket.SocketClient, r *webSocket.Room) {
 		fmt.Println("OnAppend....")
 		//发三条信息
-		ucount, acount, _ := redis.ZCard(r.RoomId)
-		client.UserMsgIndex = ucount
-		if acount > FIRST_CONTENT_SIZE { //确定该client对应的作者信息的起始和结束
-			client.AuthorStartIndex = acount - FIRST_CONTENT_SIZE
-			client.AuthorEndIndex = acount - FIRST_CONTENT_SIZE
+		uCount, aCount, _ := redis.ZCard(r.RoomId)
+		client.UserMsgIndex = uCount
+		if aCount > FIRST_CONTENT_SIZE { //确定该client对应的作者信息的起始和结束
+			client.AuthorStartIndex = aCount - FIRST_CONTENT_SIZE
+			client.AuthorEndIndex = aCount - FIRST_CONTENT_SIZE
 		}
 		fmt.Println(client)
 
-		msgs, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
+		msg, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
 		if err != nil {
 			fmt.Println(err)
 		}
-		r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msgs})
-		client.AuthorEndIndex += len(msgs)
+		r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
+		client.AuthorEndIndex += len(msg)
 		fmt.Println(client)
 	})
 
@@ -126,30 +126,30 @@ func init() {
 		if err := JSON.ParseToStruct(msg.Params, param); err == nil {
 			if param.Next { //获取往后的数据
 				//needs to send
-				msgs, err := GetWebSocketChatMsg(redis.UserMessage, r.RoomId, client.UserMsgIndex, -1)
+				msg, err := GetWebSocketChatMsg(redis.UserMessage, r.RoomId, client.UserMsgIndex, -1)
 				if err != nil {
 					return helper.Error(helper.ParamsError)
 				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "userMessage", Params: msgs})
-				client.UserMsgIndex += len(msgs)
+				r.SendSelf(client, &webSocket.ChatMsg{Method: "userMessage", Params: msg})
+				client.UserMsgIndex += len(msg)
 
-				msgs, err = GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
+				msg, err = GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
 				if err != nil {
 					return helper.Error(helper.ParamsError)
 				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msgs})
-				client.AuthorEndIndex += len(msgs)
+				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
+				client.AuthorEndIndex += len(msg)
 			} else { //获取之前的作者数据
 				begin := client.AuthorStartIndex - param.Size
 				if begin < 0 {
 					begin = 0
 				}
-				msgs, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorStartIndex, client.AuthorStartIndex)
+				msg, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorStartIndex, client.AuthorStartIndex)
 				if err != nil {
 					return helper.Error(helper.ParamsError)
 				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msgs})
-				client.AuthorEndIndex += len(msgs)
+				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
+				client.AuthorEndIndex += len(msg)
 			}
 			return helper.Success(JSON.Type{})
 		}
@@ -164,10 +164,10 @@ func init() {
 	})
 
 	redis.OnEmpity(func(roomId int64) bool {
-		msgts := models.ListMessage(roomId)
-		size := len(msgts)
+		msg := models.ListMessage(roomId)
+		size := len(msg)
 		args := make(map[int64]string)
-		for _, m := range msgts {
+		for _, m := range msg {
 			uMsg := &UserMsg{}
 			uMsg.Id = m.Id
 			uMsg.CreateTime = m.CreateTime

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
 	"net/http"
 	"reflect"
 	"time"
@@ -37,29 +38,29 @@ const (
 	FIRST_CONTENT_SIZE = 3 //进入聊天室时默认发送几条消息
 )
 
-func PreCheck(params martini.Params, req *http.Request, context martini.Context, w http.ResponseWriter) {
+func PreCheck(params martini.Params, rend render.Render, req *http.Request, context martini.Context, w http.ResponseWriter) {
 	fmt.Println("PreCheck....")
 	roomId := helper.Int64(params["roomId"])
 	fmt.Println(roomId)
 	r, err := models.GetRoom(roomId)
-	if err != nil {
+	if err != nil || r == nil {
 		fmt.Println(err)
-		w.WriteHeader(404)
-		fmt.Fprintf(w, "")
+		rend.JSON(404, helper.Error(helper.EmptyError))
+		return
 	}
 	if r.Status == models.Closed {
-		w.WriteHeader(403)
-		fmt.Fprintf(w, "")
+		rend.JSON(403, helper.Error(helper.ClosedError))
+		return
 	}
 	info, _ := httpGet.GetLoginUserInfo(req.Cookies(), roomId)
 	if r.Price > 0 { //免费的未登陆可以进入
 		if info.Code != httpGet.SUCCESS || info.Data.Id <= 0 {
-			w.WriteHeader(403)
-			fmt.Fprintf(w, "no login")
+			rend.JSON(403, helper.Error(helper.NoLoginError))
+			return
 		}
 		if info.Data.Id != r.UserId && !info.Data.Subscribed {
-			w.WriteHeader(403)
-			fmt.Fprintf(w, "no pay")
+			rend.JSON(403, helper.Error(helper.NeedSubscribeError))
+			return
 		}
 	}
 	context.Set(reflect.TypeOf(info.Data.Id), reflect.ValueOf(info.Data.Id))
@@ -92,19 +93,19 @@ func GetUserInfo(userId int) *httpGet.UserInfo {
 }
 
 func GetWebSocketChatMsg(messageType redis.MessageType, roomId int64, start int, stop int) ([]UserMsg, error) {
-	replys, err := redis.ZRange(messageType, roomId, start, stop)
+	reply, err := redis.ZRange(messageType, roomId, start, stop)
 	if err != nil {
 		return nil, err
 	}
-	msgs := []UserMsg{}
-	for _, v := range replys {
-		msg := UserMsg{}
-		err = json.Unmarshal([]byte(v), &msg)
+	msg := []UserMsg{}
+	for _, v := range reply {
+		m := UserMsg{}
+		err = json.Unmarshal([]byte(v), &m)
 		if err == nil {
-			msgs = append(msgs, msg)
+			msg = append(msg, m)
 		} else {
 			fmt.Println(err)
 		}
 	}
-	return msgs, nil
+	return msg, nil
 }
