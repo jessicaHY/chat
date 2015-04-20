@@ -70,7 +70,7 @@ func init() {
 			//tell thread to tell everyclient
 			fmt.Println(r.ThreadChannel)
 			select {
-			case r.ThreadChannel <- 1:
+			case r.ThreadChannel <- true:
 				fmt.Println("to ...runMsgTask")
 				break
 			default:
@@ -107,7 +107,7 @@ func init() {
 			//tell thread to tell everyclient
 			fmt.Println(r.ThreadChannel)
 			select {
-			case r.ThreadChannel <- 1:
+			case r.ThreadChannel <- true:
 				glog.Infoln("to ...runMsgTask")
 				break
 			default:

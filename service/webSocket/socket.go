@@ -19,7 +19,7 @@ type Room struct {
 	sync.Mutex
 	RoomId        int64
 	AuthorId      int
-	ThreadChannel chan byte //每个room对应一个goroutine来执行任务
+	ThreadChannel chan bool //每个room对应一个goroutine来执行任务
 	clients       []*SocketClient
 }
 
@@ -64,7 +64,7 @@ func GetRoom(roomId int64) *Room {
 	if err != nil {
 		glog.Fatalln(err)
 	}
-	r := &Room{sync.Mutex{}, roomId, rt.UserId, make(chan byte), make([]*SocketClient, 0)}
+	r := &Room{sync.Mutex{}, roomId, rt.UserId, make(chan bool), make([]*SocketClient, 0)}
 	RoomMap[roomId] = r
 	go r.NewThreadTask()
 	return r
@@ -107,6 +107,11 @@ func (r *Room) RemoveClient(client *SocketClient) {
 	for index, c := range r.clients {
 		if c == client {
 			r.clients = append(r.clients[:index], r.clients[(index+1):]...)
+
+			if len(r.clients) == 0 {
+				r.ThreadChannel <- false
+				delete(RoomMap, r.RoomId)
+			}
 			onRemove(client.UserId)
 		}
 	}
@@ -128,14 +133,16 @@ func (r *Room) Emit(client *SocketClient, msg *ChatMsg) {
 //启动一个goroutine，用来监听管道执行推送任务
 func (r *Room) NewThreadTask() {
 	for {
-		<-r.ThreadChannel
-		fmt.Println("NotifyAllClients")
-		for _, c := range r.clients {
-			c.out <- &ChatMsg{Method: "hasMessage"}
+		b := <-r.ThreadChannel
+		if b {
+			fmt.Println("NotifyAllClients begin...")
+			for _, c := range r.clients {
+				c.out <- &ChatMsg{Method: "hasMessage"}
+			}
+			fmt.Println("NotifyAllClients over...")
+		} else {
+			break
 		}
-		<-r.ThreadChannel
-
-		fmt.Println("NotifyAllClients over...")
 	}
 }
 
