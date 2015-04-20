@@ -11,38 +11,8 @@ import (
 	"time"
 	"github.com/martini-contrib/render"
 	"chatroom/utils/JSON"
+	"html/template"
 )
-
-//type AjaxResult struct {
-//	Code    string      `json:"code"`
-//	Message string      `json:"message"`
-//	Data    interface{} `json:"data"`
-//}
-//
-//const (
-//	ParamError   = "param error"
-//	NoLogin      = "no login"
-//	NotExisted   = "not existed"
-//	NetworkError = "network error"
-//	NoNeedToBuy  = "no need to buy"
-//	Failed       = "failed"
-//)
-//
-//func Result(ar AjaxResult) string {
-//	b, err := json.Marshal(ar)
-//	if err != nil {
-//		return ""
-//	}
-//	return string(b)
-//}
-//
-//func Success(message string, data interface{}) string {
-//	return Result(AjaxResult{"success", message, data})
-//}
-//
-//func Error(message string) string {
-//	return Result(AjaxResult{"error", message, nil})
-//}
 
 func AddRoom(req *http.Request, rend render.Render) {
 	bookId, err := strconv.Atoi(req.FormValue("bookId"))
@@ -71,7 +41,8 @@ func AddRoom(req *http.Request, rend render.Render) {
 		rend.JSON(403, helper.Error(helper.NoLoginError))
 		return
 	}
-	r, err := models.AddRoom(bookId, models.BOOK, info.Data.Id, price, req.FormValue("content"), startTime)
+	content := template.HTMLEscapeString(req.FormValue("content"))
+	r, err := models.AddRoom(bookId, models.BOOK, info.Data.Id, price, content, startTime)
 	if err != nil {
 		fmt.Println(err)
 		rend.JSON(500, helper.Error(helper.DbError))
@@ -88,13 +59,6 @@ func EditRoom(params martini.Params, req *http.Request, rend render.Render) {
 		rend.JSON(403, helper.Error(helper.ParamsError))
 		return
 	}
-	//	price64, err := strconv.ParseFloat(req.FormValue("price"), 32)
-	//	fmt.Println(price64)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		return Error(ParamError)
-	//	}
-	//	price := float32(price64)
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	startTime, err := time.ParseInLocation("2006-01-02 15:04:05", req.FormValue("startTime"), loc)
 	fmt.Println(startTime)
@@ -115,7 +79,8 @@ func EditRoom(params martini.Params, req *http.Request, rend render.Render) {
 		rend.JSON(404, helper.Error(helper.NoLoginError))
 		return
 	}
-	err = models.EditRoom(roomId, req.FormValue("content"), startTime)
+	content := template.HTMLEscapeString(req.FormValue("content"))
+	err = models.EditRoom(roomId, content, startTime)
 	if err != nil {
 		fmt.Println(err)
 		rend.JSON(404, helper.Error(helper.DbError))
