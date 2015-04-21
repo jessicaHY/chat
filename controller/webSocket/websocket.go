@@ -7,12 +7,12 @@ import (
 	"chatroom/service/redis"
 	"chatroom/service/webSocket"
 	"encoding/json"
-	"fmt"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"net/http"
 	"reflect"
 	"time"
+	"log"
 )
 
 var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
@@ -38,13 +38,13 @@ const (
 	FIRST_CONTENT_SIZE = 3 //进入聊天室时默认发送几条消息
 )
 
-func PreCheck(params martini.Params, rend render.Render, req *http.Request, context martini.Context, w http.ResponseWriter) {
-	fmt.Println("PreCheck....")
+func PreCheck(params martini.Params, rend render.Render, req *http.Request, context martini.Context) {
+	log.Println("PreCheck....")
 	roomId := helper.Int64(params["roomId"])
-	fmt.Println(roomId)
+	log.Println(roomId)
 	r, err := models.GetRoom(roomId)
 	if err != nil || r == nil {
-		fmt.Println(err)
+		log.Println(err)
 		rend.JSON(404, helper.Error(helper.EmptyError))
 		return
 	}
@@ -74,7 +74,7 @@ func HandlerSocket(context martini.Context, receiver <-chan *webSocket.ChatMsg, 
 	roomId := context.Get(reflect.TypeOf(rId)).Int()
 	userId := context.Get(reflect.TypeOf(uId)).Int()
 	uId = int(userId)
-	fmt.Println("to handler socket...", roomId, userId)
+	log.Println("to handler socket...", roomId, userId)
 	return webSocket.AppendClient(uId, roomId, receiver, sender, done, disconnect, errc)
 }
 
@@ -104,7 +104,7 @@ func GetWebSocketChatMsg(messageType redis.MessageType, roomId int64, start int,
 		if err == nil {
 			msg = append(msg, m)
 		} else {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 	return msg, nil

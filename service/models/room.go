@@ -3,9 +3,8 @@ package models
 import (
 	"chatroom/helper"
 	"errors"
-	"fmt"
-	"github.com/golang/glog"
 	"time"
+	"log"
 )
 
 type RoomTable struct {
@@ -34,7 +33,7 @@ const (
 
 func AddRoom(hostId int, hostType HostType, userId int, price int, content string, startTime time.Time) (*RoomTable, error) {
 	hostIt := helper.Int64(hostId)*10000 + helper.Int64(int8(hostType))
-	fmt.Println(hostIt)
+	log.Println(hostIt)
 	count := CountNormalRoom(hostId, hostType)
 	if count > 0 {
 		return nil, errors.New("already exists")
@@ -68,11 +67,11 @@ func ListAllRoom(hostId int, hostType HostType) ([]RoomTable, error) {
 
 func CountNormalRoom(hostId int, hostType HostType) int64 {
 	hostIt := helper.Int64(hostId)*10000 + helper.Int64(int8(hostType))
-	fmt.Println(hostIt)
+	log.Println(hostIt)
 	room := new(RoomTable)
 	total, err := engine.Where("host_it=? and status=?", hostIt, Normal).Count(room)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return total
 }
@@ -92,7 +91,7 @@ func GetRoom(roomId int64) (*RoomTable, error) {
 	r := &RoomTable{}
 	has, err := engine.Id(roomId).Get(r)
 	if err != nil {
-		glog.Fatalln(err)
+		log.Fatalln(err)
 		return nil, err
 	}
 	if has {

@@ -2,9 +2,8 @@ package redis
 
 import (
 	"chatroom/helper"
-	"fmt"
+	"log"
 	"github.com/garyburd/redigo/redis"
-	"github.com/golang/glog"
 	"time"
 )
 
@@ -71,7 +70,7 @@ func ZAddAuthorMsg(roomId int64, msgId interface{}, content string) (int, error)
 
 func ZAddAuthorMsgs(roomId int64, m map[int64]string) (int, error) {
 	//这里不需要check，该方法是批量初始化redis里的数据
-	fmt.Println("ZAddAuthorMsgs....")
+	log.Println("ZAddAuthorMsgs....")
 	key := AuthorPre + helper.Itoa64(roomId)
 	conn := pool.Get()
 	defer conn.Close()
@@ -108,18 +107,18 @@ func ZCard(roomId int64) (int, int, error) {
 
 	err := conn.Send("ZCARD", UserPre+helper.Itoa64(roomId))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return 0, 0, err
 	}
 	checkAuthroMsgExisted(roomId)
 	err = conn.Send("ZCARD", AuthorPre+helper.Itoa64(roomId))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return 0, 0, err
 	}
 	err = conn.Flush()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return 0, 0, err
 	}
 	ucount, err := redis.Int(conn.Receive())
@@ -133,8 +132,7 @@ func checkAuthroMsgExisted(roomId int64) {
 	conn.Close()
 
 	if err != nil {
-		fmt.Println(err)
-		glog.Fatalln(err)
+		log.Fatalln(err)
 		return
 	}
 	if !exists {

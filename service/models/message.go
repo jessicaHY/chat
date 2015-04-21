@@ -1,8 +1,7 @@
 package models
 
 import (
-	"fmt"
-	"github.com/golang/glog"
+	"log"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func AddMessage(userId int, roomId int64, contentType ContentType, content strin
 	msg := &MsgTable{UserId: userId, RoomId: roomId, Type: contentType, Content: content}
 	_, err := engine.Insert(msg)
 	if err != nil {
-		glog.Fatalln(err)
+		log.Fatalln(err)
 	}
 	return msg, err
 }
@@ -35,7 +34,7 @@ func ListMessage(roomId int64) []MsgTable {
 	msgs := []MsgTable{}
 	err := engine.Where("room_id=?", roomId).Find(&msgs)
 	if err != nil {
-		glog.Fatalln(err)
+		log.Fatalln(err)
 	}
 	return msgs
 }
@@ -47,6 +46,6 @@ func PushCompleteRoom(roomId int64) string {
 		content = content + `
 		` + m.Content
 	}
-	fmt.Println(content)
+	log.Println(content)
 	return content
 }

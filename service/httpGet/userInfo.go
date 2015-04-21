@@ -5,10 +5,10 @@ import (
 	"chatroom/utils"
 	"chatroom/utils/JSON"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"log"
 )
 
 type UserType int
@@ -46,16 +46,16 @@ func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*WingsResult, error) 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
 	result := string(body)
-	fmt.Println(result)
+	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
-	fmt.Println(info)
+	log.Println(info)
 	return info, nil
 }
 
@@ -74,16 +74,16 @@ func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*WingsResult, error
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
 	result := string(body)
-	fmt.Println(result)
+	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
-	fmt.Println(info)
+	log.Println(info)
 	return info, nil
 }
 
@@ -91,22 +91,22 @@ func GetUserInfo(userId int) (*WingsResult, error) {
 	info := &WingsResult{}
 	resp, err := http.Get(utils.HOST + "/ajax/room/user/info?userId=" + strconv.Itoa(userId))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
 	result := string(body)
-	fmt.Println(result)
+	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
-	fmt.Println(info)
+	log.Println(info)
 	return info, nil
 }
 
@@ -124,18 +124,18 @@ func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*WingsResult, err
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
 	result := string(body)
-	fmt.Println(result)
+	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return info, err
 	}
 	if info.Code == ERROR {
 		return info, errors.New(info.Message)
 	}
-	fmt.Println(info)
+	log.Println(info)
 	return info, nil
 }

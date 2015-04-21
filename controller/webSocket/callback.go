@@ -7,15 +7,14 @@ import (
 	"chatroom/service/webSocket"
 	"chatroom/utils/JSON"
 	"encoding/json"
-	"fmt"
-	"github.com/golang/glog"
 	"time"
+	"log"
 )
 
 func init() {
 
 	webSocket.OnAppend(func(client *webSocket.SocketClient, r *webSocket.Room) {
-		fmt.Println("OnAppend....")
+		log.Println("OnAppend....")
 		//发三条信息
 		uCount, aCount, _ := redis.ZCard(r.RoomId)
 		client.UserMsgIndex = uCount
@@ -23,15 +22,15 @@ func init() {
 			client.AuthorStartIndex = aCount - FIRST_CONTENT_SIZE
 			client.AuthorEndIndex = aCount - FIRST_CONTENT_SIZE
 		}
-		fmt.Println(client)
+		log.Println(client)
 
 		msg, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorEndIndex, -1)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
 		client.AuthorEndIndex += len(msg)
-		fmt.Println(client)
+		log.Println(client)
 	})
 
 	webSocket.OnRemove(func(userId int) {
@@ -39,7 +38,7 @@ func init() {
 	})
 	//作者发信息
 	webSocket.OnEmit("authorSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		fmt.Println("authorSend")
+		log.Println("authorSend")
 		if client.UserId != r.AuthorId {
 			return helper.Error(helper.NoRightError)
 		}
@@ -48,33 +47,33 @@ func init() {
 			//insert into db
 			tMsg, err := models.AddMessage(client.UserId, r.RoomId, models.Chapter, uMsg.Content)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return helper.Error(helper.ParamsError)
 			}
 			uMsg.Id = tMsg.Id
 			uMsg.CreateTime = tMsg.CreateTime
 			uMsg.Info = GetUserInfo(tMsg.UserId)
-			fmt.Println(uMsg)
+			log.Println(uMsg)
 
 			//save to redis
 			b, err := json.Marshal(uMsg)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return helper.Error(helper.ParamsError)
 			}
 			_, err = redis.ZAddAuthorMsg(r.RoomId, tMsg.Id, string(b))
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return helper.Error(helper.ParamsError)
 			}
 			//tell thread to tell everyclient
-			fmt.Println(r.ThreadChannel)
+			log.Println(r.ThreadChannel)
 			select {
 			case r.ThreadChannel <- true:
-				fmt.Println("to ...runMsgTask")
+				log.Println("to ...runMsgTask")
 				break
 			default:
-				fmt.Println("back msg")
+				log.Println("back msg")
 				break
 			}
 			return helper.Success(JSON.Type{})
@@ -84,7 +83,7 @@ func init() {
 
 	//用户发消息
 	webSocket.OnEmit("userSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		fmt.Println("userSend...")
+		log.Println("userSend...")
 		if client.UserId <= 0 {
 			return helper.Error(helper.NoLoginError)
 		}
@@ -93,7 +92,7 @@ func init() {
 			uMsg.Id = 0
 			uMsg.CreateTime = time.Now()
 			uMsg.Info = GetUserInfo(client.UserId)
-			fmt.Println(uMsg)
+			log.Println(uMsg)
 
 			//save to redis
 			b, err := json.Marshal(uMsg)
@@ -105,13 +104,13 @@ func init() {
 				return helper.Error(helper.ParamsError)
 			}
 			//tell thread to tell everyclient
-			fmt.Println(r.ThreadChannel)
+			log.Println(r.ThreadChannel)
 			select {
 			case r.ThreadChannel <- true:
-				glog.Infoln("to ...runMsgTask")
+				log.Println("to ...runMsgTask")
 				break
 			default:
-				glog.Infoln("back msg")
+				log.Println("back msg")
 				break
 			}
 			return helper.Success(JSON.Type{})
@@ -176,14 +175,14 @@ func init() {
 
 			b, err := json.Marshal(uMsg)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				break
 			}
 			args[m.Id] = string(b)
 		}
 		count, err := redis.ZAddAuthorMsgs(roomId, args)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		return size == count
 	})

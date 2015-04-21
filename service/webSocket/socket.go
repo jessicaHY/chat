@@ -4,9 +4,8 @@ import (
 	"chatroom/helper"
 	"chatroom/service/models"
 	"chatroom/utils/JSON"
-	"fmt"
-	"github.com/golang/glog"
 	"sync"
+	"log"
 )
 
 var syncLock = sync.Mutex{} //LiveMap
@@ -20,11 +19,11 @@ type Room struct {
 	RoomId        int64
 	AuthorId      int
 	ThreadChannel chan bool //每个room对应一个goroutine来执行任务
-	clients       []*SocketClient
+	clientsMap      map[int][]*SocketClient	//一个用户可能从多个终端登录，有多个socket连接
 }
 
 type SocketClient struct {
-	UserId           int //进入直播的时候确定鉴权UserId
+	UserId          int //进入直播的时候确定鉴权UserId
 	AuthorStartIndex int
 	AuthorEndIndex   int
 	UserMsgIndex     int
@@ -62,9 +61,10 @@ func GetRoom(roomId int64) *Room {
 	}
 	rt, err := models.GetRoom(roomId)
 	if err != nil {
-		glog.Fatalln(err)
+		log.Fatalln(err)
 	}
-	r := &Room{sync.Mutex{}, roomId, rt.UserId, make(chan bool), make([]*SocketClient, 0)}
+
+	r := &Room{sync.Mutex{}, roomId, rt.UserId, make(chan bool), make(map[int][]*SocketClient)}
 	RoomMap[roomId] = r
 	go r.NewThreadTask()
 	return r
@@ -75,7 +75,7 @@ func AppendClient(userId int, roomId int64, receiver <-chan *ChatMsg, sender cha
 	r := GetRoom(roomId)
 	r.AppendClient(client)
 
-	fmt.Println("waiting for msg...")
+	log.Println("waiting for msg...")
 	for {
 		select {
 		case <-client.err:
@@ -96,29 +96,54 @@ func (r *Room) AppendClient(client *SocketClient) {
 	r.Lock()
 	defer r.Unlock()
 
-	r.clients = append(r.clients, client)
+	cs, _ := r.clientsMap[client.UserId]
+	if cs != nil {
+		r.clientsMap[client.UserId] = append(r.clientsMap[client.UserId], client)
+	} else {
+		r.clientsMap[client.UserId] = []*SocketClient{client}
+	}
+//	r.clients = append(r.clients, client)
 	onAppend(client, r)
 }
 
 func (r *Room) RemoveClient(client *SocketClient) {
 	r.Lock()
 	defer r.Unlock()
+	log.Println(*r)
+	log.Println(r.clientsMap)
 
-	for index, c := range r.clients {
+	values, _ := r.clientsMap[client.UserId]
+	for index, c := range values {
 		if c == client {
-			r.clients = append(r.clients[:index], r.clients[(index+1):]...)
+			r.clientsMap[client.UserId] = append(values[:index], values[(index+1):]...)
 
-			if len(r.clients) == 0 {
+			log.Println(r.clientsMap)
+			if len(r.clientsMap[client.UserId]) == 0 {
+				delete(r.clientsMap, client.UserId)
+				onRemove(client.UserId)
+			}
+			if len(r.clientsMap) == 0 {
 				r.ThreadChannel <- false
 				delete(RoomMap, r.RoomId)
 			}
-			onRemove(client.UserId)
+			break
 		}
 	}
+//	for index, c := range r.clients {
+//		if c == client {
+//			r.clients = append(r.clients[:index], r.clients[(index+1):]...)
+//
+//			if len(r.clients) == 0 {
+//				r.ThreadChannel <- false
+//				delete(RoomMap, r.RoomId)
+//			}
+//			onRemove(client.UserId)
+//		}
+//	}
 }
 
 func (r *Room) Emit(client *SocketClient, msg *ChatMsg) {
-	fmt.Println("Emit....")
+	log.Println("Emit....")
 	syncLock.Lock()
 	defer syncLock.Unlock()
 	method := msg.Method
@@ -135,11 +160,13 @@ func (r *Room) NewThreadTask() {
 	for {
 		b := <-r.ThreadChannel
 		if b {
-			fmt.Println("NotifyAllClients begin...")
-			for _, c := range r.clients {
-				c.out <- &ChatMsg{Method: "hasMessage"}
+			log.Println("NotifyAllClients begin...")
+			for _, cs := range r.clientsMap {
+				for _, c := range cs {
+					c.out <- &ChatMsg{Method: "hasMessage"}
+				}
 			}
-			fmt.Println("NotifyAllClients over...")
+			log.Println("NotifyAllClients over...")
 		} else {
 			break
 		}
