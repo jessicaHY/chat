@@ -25,7 +25,7 @@ type UserMsg struct {
 }
 
 type Param struct {
-	Next bool `json:"next"`
+	Pre bool `json:"pre"`
 	Size int  `json:"size`
 }
 

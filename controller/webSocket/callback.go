@@ -123,7 +123,8 @@ func init() {
 	webSocket.OnEmit("getMessage", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
 		param := &Param{}
 		if err := JSON.ParseToStruct(msg.Params, param); err == nil {
-			if param.Next { //获取往后的数据
+			log.Println(param)
+			if !param.Pre { //获取往后的数据
 				//needs to send
 				msg, err := GetWebSocketChatMsg(redis.UserMessage, r.RoomId, client.UserMsgIndex, -1)
 				if err != nil {
