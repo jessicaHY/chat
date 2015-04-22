@@ -171,3 +171,12 @@ func (r *Room) NewThreadTask() {
 func (r *Room) SendSelf(client *SocketClient, msg *ChatMsg) {
 	client.out <- msg
 }
+
+func (r *Room) GetUserCount() [2]int {
+	cs, _ := r.clientsMap[0]
+	if cs != nil {
+		return [2]int{len(r.clientsMap) - 1, len(r.clientsMap[0])}
+	} else {
+		return [2]int{len(r.clientsMap), 0}
+	}
+}

@@ -178,6 +178,7 @@ func init() {
 				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
 				client.AuthorEndIndex += len(msg)
 			}
+			r.SendSelf(client, &webSocket.ChatMsg{Method: "userCount", Params: r.GetUserCount()})
 			return helper.Success(JSON.Type{})
 		}
 		return helper.Error(helper.ParamsError)
