@@ -11,7 +11,36 @@ import (
 	"log"
 )
 
+func NotifyAllClients(r *webSocket.Room) {
+	log.Println("NotifyAllClients...")
+	select {
+	case r.ThreadChannel <- true:
+		log.Println("to ...runMsgTask")
+	break
+	default:
+		log.Println("back msg")
+	break
+	}
+}
+
 func init() {
+
+	//该用户第一次连接时调用
+	webSocket.BeforeAppend(func(client *webSocket.SocketClient, r *webSocket.Room) {
+		if client.UserId <= 0 {
+			return
+		}
+		uMsg := &UserMsg{Id:0, Content: "", Type:InType, CreateTime:time.Now(), Info:GetUserInfo(client.UserId)}
+		log.Println(uMsg)
+		//save to redis
+		b, err := json.Marshal(uMsg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = redis.ZAddUserMsg(r.RoomId, string(b))
+		NotifyAllClients(r)
+	})
 
 	webSocket.OnAppend(func(client *webSocket.SocketClient, r *webSocket.Room) {
 		log.Println("OnAppend....")
@@ -32,9 +61,22 @@ func init() {
 		client.AuthorEndIndex += len(msg)
 		log.Println(client)
 	})
-
-	webSocket.OnRemove(func(userId int) {
+	//该用户无连接后调用
+	webSocket.OnRemove(func(userId int, r *webSocket.Room) {
+		if userId <= 0 {
+			return
+		}
+		uMsg := &UserMsg{Id:0, Content: "", Type:OutType, CreateTime:time.Now(), Info:GetUserInfo(userId)}
+		log.Println(uMsg)
+		//save to redis
+		b, err := json.Marshal(uMsg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = redis.ZAddUserMsg(r.RoomId, string(b))
 		delete(UserInfoMap, userId)
+		NotifyAllClients(r)
 	})
 	//作者发信息
 	webSocket.OnEmit("authorSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
@@ -67,15 +109,7 @@ func init() {
 				return helper.Error(helper.ParamsError)
 			}
 			//tell thread to tell everyclient
-			log.Println(r.ThreadChannel)
-			select {
-			case r.ThreadChannel <- true:
-				log.Println("to ...runMsgTask")
-				break
-			default:
-				log.Println("back msg")
-				break
-			}
+			NotifyAllClients(r)
 			return helper.Success(JSON.Type{})
 		}
 		return helper.Error(helper.ParamsError)
@@ -92,6 +126,7 @@ func init() {
 			uMsg.Id = 0
 			uMsg.CreateTime = time.Now()
 			uMsg.Info = GetUserInfo(client.UserId)
+			uMsg.Type = ContentType
 			log.Println(uMsg)
 
 			//save to redis
@@ -104,15 +139,7 @@ func init() {
 				return helper.Error(helper.ParamsError)
 			}
 			//tell thread to tell everyclient
-			log.Println(r.ThreadChannel)
-			select {
-			case r.ThreadChannel <- true:
-				log.Println("to ...runMsgTask")
-				break
-			default:
-				log.Println("back msg")
-				break
-			}
+			NotifyAllClients(r)
 			return helper.Success(JSON.Type{})
 		}
 

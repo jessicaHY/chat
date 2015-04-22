@@ -21,6 +21,7 @@ type UserMsg struct {
 	Id         int64             `json:"id"`
 	Content    string            `json:"content"`
 	CreateTime time.Time         `json:"createTime"`
+	Type		int
 	Info       *httpGet.UserInfo `json:"userInfo"`
 }
 
@@ -33,6 +34,11 @@ const (
 	User httpGet.UserType = iota
 	Writer
 	Staff
+)
+const (
+	ContentType = iota
+	InType
+	OutType
 )
 const (
 	FIRST_CONTENT_SIZE = 3 //进入聊天室时默认发送几条消息
@@ -63,7 +69,12 @@ func PreCheck(params martini.Params, rend render.Render, req *http.Request, cont
 			return
 		}
 	}
-	context.Set(reflect.TypeOf(info.Data.Id), reflect.ValueOf(info.Data.Id))
+	if info.Data != nil {
+		context.Set(reflect.TypeOf(info.Data.Id), reflect.ValueOf(info.Data.Id))
+	} else {// no login
+		var uId int = 0
+		context.Set(reflect.TypeOf(uId), reflect.ValueOf(uId))
+	}
 	context.Set(reflect.TypeOf(roomId), reflect.ValueOf(roomId))
 	//	context.Next()
 }

@@ -12,7 +12,8 @@ var syncLock = sync.Mutex{} //LiveMap
 var RoomMap map[int64]*Room = make(map[int64]*Room)
 var onEmitCallback = map[string]func(*ChatMsg, *SocketClient, *Room) JSON.Type{}
 var onAppend = func(*SocketClient, *Room) {}
-var onRemove = func(int) {}
+var beforeAppend = func(*SocketClient, *Room) {}
+var onRemove = func(int, *Room) {}
 
 type Room struct {
 	sync.Mutex
@@ -43,11 +44,16 @@ type ChatMsg struct {
 func OnEmit(method string, callback func(*ChatMsg, *SocketClient, *Room) JSON.Type) {
 	onEmitCallback[method] = callback
 }
+
+func BeforeAppend(callback func(*SocketClient, *Room)) {
+	beforeAppend = callback
+}
+
 func OnAppend(callback func(*SocketClient, *Room)) {
 	onAppend = callback
 }
 
-func OnRemove(callback func(int)) {
+func OnRemove(callback func(int, *Room)) {
 	onRemove = callback
 }
 
@@ -100,9 +106,9 @@ func (r *Room) AppendClient(client *SocketClient) {
 	if cs != nil {
 		r.clientsMap[client.UserId] = append(r.clientsMap[client.UserId], client)
 	} else {
+		beforeAppend(client, r)//发送消息
 		r.clientsMap[client.UserId] = []*SocketClient{client}
 	}
-//	r.clients = append(r.clients, client)
 	onAppend(client, r)
 }
 
@@ -120,7 +126,7 @@ func (r *Room) RemoveClient(client *SocketClient) {
 			log.Println(r.clientsMap)
 			if len(r.clientsMap[client.UserId]) == 0 {
 				delete(r.clientsMap, client.UserId)
-				onRemove(client.UserId)
+				onRemove(client.UserId, r)
 			}
 			if len(r.clientsMap) == 0 {
 				r.ThreadChannel <- false
@@ -129,17 +135,6 @@ func (r *Room) RemoveClient(client *SocketClient) {
 			break
 		}
 	}
-//	for index, c := range r.clients {
-//		if c == client {
-//			r.clients = append(r.clients[:index], r.clients[(index+1):]...)
-//
-//			if len(r.clients) == 0 {
-//				r.ThreadChannel <- false
-//				delete(RoomMap, r.RoomId)
-//			}
-//			onRemove(client.UserId)
-//		}
-//	}
 }
 
 func (r *Room) Emit(client *SocketClient, msg *ChatMsg) {
