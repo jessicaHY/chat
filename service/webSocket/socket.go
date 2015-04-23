@@ -6,6 +6,7 @@ import (
 	"chatroom/utils/JSON"
 	"sync"
 	"log"
+	"chatroom/service/httpGet"
 )
 
 var syncLock = sync.Mutex{} //LiveMap
@@ -19,6 +20,7 @@ type Room struct {
 	sync.Mutex
 	RoomId        int64
 	AuthorId      int
+	ShutupUserIds	map[int]int
 	ThreadChannel chan bool //每个room对应一个goroutine来执行任务
 	clientsMap      map[int][]*SocketClient	//一个用户可能从多个终端登录，有多个socket连接
 }
@@ -70,7 +72,15 @@ func GetRoom(roomId int64) *Room {
 		log.Fatalln(err)
 	}
 
-	r := &Room{sync.Mutex{}, roomId, rt.UserId, make(chan bool), make(map[int][]*SocketClient)}
+	dbRoom, err := models.GetRoom(roomId)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m, err := httpGet.GetShutUpList(dbRoom.GetHostId())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	r := &Room{sync.Mutex{}, roomId, rt.UserId, m, make(chan bool), make(map[int][]*SocketClient)}
 	RoomMap[roomId] = r
 	go r.NewThreadTask()
 	return r
@@ -178,5 +188,25 @@ func (r *Room) GetUserCount() [2]int {
 		return [2]int{len(r.clientsMap) - 1, len(r.clientsMap[0])}
 	} else {
 		return [2]int{len(r.clientsMap), 0}
+	}
+}
+
+func AddShutUp(roomId int64, userId int) {
+	syncLock.Lock()
+	defer syncLock.Unlock()
+
+	room, _ := RoomMap[roomId]
+	if room != nil {
+		room.ShutupUserIds[userId] = userId
+	}
+}
+
+func DelShutUp(roomId int64, userId int) {
+	syncLock.Lock()
+	defer syncLock.Unlock()
+
+	room, _ := RoomMap[roomId]
+	if room != nil {
+		delete(room.ShutupUserIds, userId)
 	}
 }

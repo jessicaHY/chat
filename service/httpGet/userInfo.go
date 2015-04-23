@@ -20,10 +20,14 @@ type UserInfo struct {
 	Subscribed bool   `json:"subscribed"`
 }
 
-type WingsResult struct {
+type Result struct {
 	Code    int       `json:"code"`
 	Type    string    `json:"type"`
 	Message string    `json:"message"`
+}
+
+type UserResult struct {
+	Result
 	Data    *UserInfo `json:"data"`
 }
 
@@ -33,8 +37,8 @@ const (
 )
 
 //用于增删改直播，判断用户是否是作者
-func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*WingsResult, error) {
-	info := &WingsResult{}
+func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, error) {
+	info := &UserResult{}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/author/check?bookId="+strconv.Itoa(bookId), nil)
@@ -60,8 +64,8 @@ func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*WingsResult, error) 
 }
 
 //get logined user info
-func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*WingsResult, error) {
-	info := &WingsResult{}
+func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error) {
+	info := &UserResult{}
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/login/info?roomId="+helper.Itoa64(roomId), nil)
 	for _, v := range cookies {
@@ -87,8 +91,8 @@ func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*WingsResult, error
 	return info, nil
 }
 
-func GetUserInfo(userId int) (*WingsResult, error) {
-	info := &WingsResult{}
+func GetUserInfo(userId int) (*UserResult, error) {
+	info := &UserResult{}
 	resp, err := http.Get(utils.HOST + "/ajax/room/user/info?userId=" + strconv.Itoa(userId))
 	if err != nil {
 		log.Println(err)
@@ -110,8 +114,8 @@ func GetUserInfo(userId int) (*WingsResult, error) {
 	return info, nil
 }
 
-func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*WingsResult, error) {
-	info := &WingsResult{}
+func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*UserResult, error) {
+	info := &UserResult{}
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/buy?roomId="+helper.Itoa64(roomId)+"&money="+strconv.Itoa(money), nil)
 	for _, v := range cookies {

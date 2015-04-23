@@ -27,7 +27,8 @@ type UserMsg struct {
 
 type Param struct {
 	Pre bool `json:"pre"`
-	Size int  `json:"size`
+	Size int  `json:"size"`
+	UserId int	`json:"userId"`
 }
 
 const (

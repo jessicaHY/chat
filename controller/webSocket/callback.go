@@ -121,6 +121,9 @@ func init() {
 		if client.UserId <= 0 {
 			return helper.Error(helper.NoLoginError)
 		}
+		if _, ok := r.ShutupUserIds[client.UserId]; ok {
+			return helper.Error(helper.NoRightError)
+		}
 		uMsg := &UserMsg{}
 		if err := JSON.ParseToStruct(msg.Params, uMsg); err == nil {
 			uMsg.Id = 0
