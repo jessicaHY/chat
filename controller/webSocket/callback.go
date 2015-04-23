@@ -121,7 +121,7 @@ func init() {
 		if client.UserId <= 0 {
 			return helper.Error(helper.NoLoginError)
 		}
-		if _, ok := r.ShutupUserIds[client.UserId]; ok {
+		if _, ok := r.ShutUpUserIds[client.UserId]; ok {
 			return helper.Error(helper.NoRightError)
 		}
 		uMsg := &UserMsg{}

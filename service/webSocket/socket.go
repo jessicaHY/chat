@@ -20,7 +20,7 @@ type Room struct {
 	sync.Mutex
 	RoomId        int64
 	AuthorId      int
-	ShutupUserIds	map[int]int
+	ShutUpUserIds	map[int]int
 	ThreadChannel chan bool //每个room对应一个goroutine来执行任务
 	clientsMap      map[int][]*SocketClient	//一个用户可能从多个终端登录，有多个socket连接
 }
@@ -197,7 +197,7 @@ func AddShutUp(roomId int64, userId int) {
 
 	room, _ := RoomMap[roomId]
 	if room != nil {
-		room.ShutupUserIds[userId] = userId
+		room.ShutUpUserIds[userId] = userId
 	}
 }
 
@@ -207,6 +207,6 @@ func DelShutUp(roomId int64, userId int) {
 
 	room, _ := RoomMap[roomId]
 	if room != nil {
-		delete(room.ShutupUserIds, userId)
+		delete(room.ShutUpUserIds, userId)
 	}
 }
