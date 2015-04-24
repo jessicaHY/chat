@@ -13,6 +13,7 @@
     "requirejs":"",
     "underscore":"",
     "backbone":"",
+    "mustache": "",
     "bourbon":""
   }
 }
