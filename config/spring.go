@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/go-martini/martini"
-	"github.com/golang/glog"
+	"log"
 )
 
 //type configType int
@@ -24,7 +24,7 @@ func GetSlice(key configType) []interface{} {
 }
 
 func MappingController(m *martini.ClassicMartini) {
-	glog.Infoln("mapping controller")
+	log.Println("mapping controller")
 	controllerMap := GetSlice(Controller)
 
 	for _, ctn := range controllerMap {

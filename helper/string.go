@@ -55,11 +55,20 @@ func Trim(s string) string {
 
 //todo real value
 func Num(arg interface{}) int {
-	if reflect.TypeOf(arg).Kind() == reflect.String {
+	switch reflect.TypeOf(arg).Kind() {
+	case reflect.String:
 		if num, err := strconv.Atoi(arg.(string)); err == nil {
 			return num
 		}
+	case reflect.Int:
+		if num, ok := arg.(int); ok {
+			return num
+		}
+	case reflect.Int8:
+		return int(arg.(int8))
 	}
+//	if reflect.TypeOf(arg).Kind() == reflect.String {
+//	}
 	return 0
 }
 

@@ -7,6 +7,7 @@ import (
 	"chatroom/config"
 	"runtime"
 	"path"
+	_ "net/http/pprof"
 )
 
 var methods = []func(){}
@@ -16,7 +17,6 @@ func Register(fn func()) {
 }
 
 func Start(port string, onStart func()) {
-
 
 	_, filename, _, _ := runtime.Caller(1)
 	exeDir := path.Dir(filename)
@@ -30,6 +30,7 @@ func Start(port string, onStart func()) {
 	}))
 
 	m.Use(martini.Static(path.Join(exeDir, "public")))
+
 	config.MappingController(m)
 
 	http.Handle("/", m)
