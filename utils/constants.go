@@ -1,7 +1,7 @@
 package utils
 
 const (
-	HOST = "http://localhost"
+	HOST = "http://localhost:8080"
 )
 
 type HttpResult struct {

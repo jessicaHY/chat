@@ -194,7 +194,7 @@ func init() {
 		return helper.Success(JSON.Type{})
 	})
 
-	redis.OnEmpity(func(roomId int64) bool {
+	redis.OnEmpty(func(roomId int64) bool {
 		msg := models.ListMessage(roomId)
 		size := len(msg)
 		args := make(map[int64]string)
