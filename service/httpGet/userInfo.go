@@ -46,7 +46,9 @@ func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, error) {
 		req.AddCookie(v)
 	}
 	resp, err := client.Do(req)
-
+	if err != nil {
+		return info, err
+	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -72,7 +74,7 @@ func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error)
 		req.AddCookie(v)
 	}
 	resp, err := client.Do(req)
-	if resp.Body == nil {
+	if err != nil {
 		return info, err
 	}
 	defer resp.Body.Close()

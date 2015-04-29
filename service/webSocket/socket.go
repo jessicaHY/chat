@@ -40,6 +40,7 @@ type SocketClient struct {
 type ChatMsg struct {
 	Method string      `json:"method"`
 	Params interface{} `json:"data"`
+	Pre bool `json:"pre"`	//返回客户端向前还是向后
 }
 
 //注册回调
@@ -156,7 +157,7 @@ func (r *Room) Emit(client *SocketClient, msg *ChatMsg) {
 	if _, found := onEmitCallback[method]; method != "" && found {
 		onEmitCallback[method](msg, client, r)
 	} else {
-		client.out <- &ChatMsg{method, helper.Error("method undefined")}
+		client.out <- &ChatMsg{method, helper.Error("method undefined"), false}
 	}
 }
 

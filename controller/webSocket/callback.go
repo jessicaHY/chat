@@ -178,7 +178,7 @@ func init() {
 				if err != nil {
 					return helper.Error(helper.ParamsError)
 				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
+				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg, Pre: true})
 				client.AuthorEndIndex += len(msg)
 			}
 			r.SendSelf(client, &webSocket.ChatMsg{Method: "userCount", Params: r.GetUserCount()})
