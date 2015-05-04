@@ -155,7 +155,7 @@ func (r *Room) Emit(client *SocketClient, msg *ChatMsg) {
 	method := msg.Method
 
 	if _, found := onEmitCallback[method]; method != "" && found {
-		onEmitCallback[method](msg, client, r)
+		client.out <- &ChatMsg{method, onEmitCallback[method](msg, client, r)}
 	} else {
 		client.out <- &ChatMsg{method, helper.Error("method undefined"), false}
 	}
