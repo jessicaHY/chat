@@ -20,6 +20,7 @@ func (ctn *Routes) SetRouter(m *martini.ClassicMartini) {
 
 	m.Get("/", home.Home)
 	m.Get("/socket/:roomId", ctrlWebSocket.PreCheck, sockets.JSON(webSocket.ChatMsg{}), ctrlWebSocket.HandlerSocket)
+	m.Get("/room/info/:roomId", ajax.RoomInfo)
 	m.Post("/room/add", ajax.AddRoom)
 	m.Post("/room/edit/:roomId", ajax.EditRoom)
 	m.Get("/room/close/:roomId", ajax.CloseRoom)

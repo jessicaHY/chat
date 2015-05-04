@@ -14,6 +14,22 @@ import (
 	"log"
 )
 
+func RoomInfo(params martini.Params, rend render.Render) {
+	roomId := helper.Int64(params["roomId"])
+	log.Println(roomId)
+	if roomId <= 0 {
+		rend.JSON(403, helper.Error(helper.ParamsError))
+		return
+	}
+	r, err := models.GetRoom(roomId)
+	if err != nil || r == nil {
+		log.Println(err)
+		rend.JSON(404, helper.Error(helper.ParamsError))
+		return
+	}
+	rend.JSON(200, helper.Success(r))
+}
+
 func AddRoom(req *http.Request, rend render.Render) {
 	bookId, err := strconv.Atoi(req.FormValue("bookId"))
 	if err != nil {
