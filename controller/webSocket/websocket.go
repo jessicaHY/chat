@@ -21,7 +21,7 @@ type UserMsg struct {
 	Id         int64             `json:"id"`
 	Content    string            `json:"content"`
 	CreateTime time.Time         `json:"createTime"`
-	Type		int
+	Type	   int				 `json:"type"`
 	Info       *httpGet.UserInfo `json:"userInfo"`
 }
 

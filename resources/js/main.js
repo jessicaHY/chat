@@ -6,20 +6,14 @@ requirejs.config({
     paths: {
         jquery: '/components/jquery/dist/jquery.min',
         kernel: 'core/kernel',
-        angular: '/components/angular/angular.min',
         react: '/components/react/react-with-addons.min',
-        ngSanitize: '/components/angular-sanitize/angular-sanitize.min',
-        ngWebSocket: '/components/angular-websocket/angular-websocket.min'
+        Backbone: '/components/backbone/backbone',
+        underscore: '/components/underscore/underscore-min',
+        Mustache : '/components/mustache/mustache.min'
     },
     shim: {
-        ngSanitize: {
-            deps: ['angular']
-        },
-        ngWebSocket: {
-            deps: ['angular']
-        },
-        angular: {
-            exports: 'angular'
+        Backbone: {
+            deps: ['underscore']
         }
     }
 });

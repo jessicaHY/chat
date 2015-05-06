@@ -4,49 +4,47 @@
     <title>Index</title>
     ${template "basic"}
 </head>
-<body class="index" ng-controller="homeCtrl">
+<body class="index" id="App">
     <div class="wrap">
         <div class="top">
             <section class="mod author-talk" id="AuthorTalk">
                 <div class="bd">
-                    <ul>
-                        <li ng-repeat="talk in authorTalkList">
-                            <article class="talk">
-                                <div class="content" ng-bind-html="talk.Content"></div>
-                            </article>
-                        </li>
-                    </ul>
+                    <ul></ul>
                 </div>
             </section>
             <section class="mod user-talk" id="UserTalk">
                 <div class="bd">
-                    <ul>
-                        <li ng-repeat="talk in userTalkList">
-                            <article class="talk">
-                                <img ng-src="{{talk.UserPic}}" alt=""/>
-                                <span class="name" ng-bind-html="talk.Name"></span>
-                                <div class="content" ng-bind-html="talk.Content"></div>
-                            </article>
-                        </li>
-                    </ul>
+                    <ul></ul>
                 </div>
             </section>
         </div>
         <div class="bottom">
-            <section class="mod author-form" id="AuthorForm" talk-form="{{UserType.Author}}">
+            <section class="mod author-form" id="AuthorForm">
                 <div class="bd">
-                    <textarea class="form-control" ng-model="authorContent" placeholder="Author:"></textarea>
-                    <button class="btn btn-primary disabled" ng-class="{disabled: !authorContent }">Send</button>
+                    <textarea class="form-control" placeholder="Author:"></textarea>
+                    <button class="btn btn-primary disabled">Send</button>
                 </div>
             </section>
-            <section class="mod user-form" id="UserForm" talk-form="{{UserType.User}}">
+            <section class="mod user-form" id="UserForm">
                 <div class="bd">
-                    <textarea class="form-control" ng-model="userContent" placeholder="User:"></textarea>
-                    <button class="btn btn-primary disabled" ng-class="{disabled: !userContent }">Send</button>
+                    <textarea class="form-control" placeholder="User:"></textarea>
+                    <button class="btn btn-primary disabled">Send</button>
                 </div>
             </section>
         </div>
     </div>
+    <script id="Template_AuthorTalkItem" type="text/template">
+        <article class="talk">
+            <div class="content">{{content}}</div>
+        </article>
+    </script>
+    <script id="Template_UserTalkItem" type="text/template">
+        <article class="talk">
+            <img src="{{userInfo.icon}}" alt=""/>
+            <span class="name">{{userInfo.name}}</span>
+            <div class="content">{{content}}</div>
+        </article>
+    </script>
     <script>
         _inlineRun(function(){
             require(['controller/homeCtrl']);

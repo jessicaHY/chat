@@ -1,1 +1,103 @@
-define(["jquery","kernel","angular","./module"],function(e,t,n,s){s.factory("Websocket",["$websocket",function(e){var s=t.Class.extend({init:function(e,t){this._reconnectOnLoss=n.isUndefined(t)?!0:t,this.events=n.extend({message:{},open:n.noop,error:n.noop,close:n.noop,giveup:n.noop},e)},_isListen:!1,_isConnected:!1,_retryTimes:0,listen:function(){var t=this;if(!this._isListen)return this._isListen=!0,this.socket=e("ws://"+location.host+"/socket/"),this.socket.onMessage(function(e){var n=JSON.parse(e.data);n.method in t.events.message&&t.events.message[n.method](n.data,e)}),this.socket.onOpen(function(e){t.events.open.call(t,e),t._retryTimes=0,t._isConnected=!0}),this.socket.onClose(function(e){t.events.close.call(t,e),t._reconnectOnLoss&&t.reconnect(),t._isConnected=!1}),this.socket.onError(function(e){t._isConnected&&(t.events.error.call(t,e),t._reconnectOnLoss&&t.reconnect())}),this},reconnect:function(){return this._retryTimes>=3?(this.events.giveup(),this.disconnect(!0),void(this._isListen=!1)):(this._retryTimes++,console.warn("websocket disconnect, retry",this._retryTimes),void this.socket.reconnect())},disconnect:function(e){e&&(this._reconnectOnLoss=!1),this.socket.close(e)},emit:function(e,t){return this.send({method:e,data:t})},broadcast:function(e,t){return this.emit("broadcast",{method:e,data:t})},on:function(e,t){"string"==typeof e&&(/^(error|close|open|giveup)$/.test(e)?this.events[e]=t:this.events.message[e]=t)},send:function(e){return this.socket.send(e)}});return function(e,t){return new s(e,t)}}])});
+/**
+ * Created by Yinxiong on 2014-11-05.
+ */
+
+define([
+'jquery',
+'kernel',
+'Backbone'
+],
+function( $, core, Backbone ){
+
+    var Socket = Backbone.Model.extend({
+        isListen: false,
+        isConnected: false,
+        _retryTimes: 0,
+        defaults: {
+            reconnect: true,
+            arg: '',
+            events: {
+                message: {},
+                open: $.noop,
+                error: $.noop,
+                close: $.noop,
+                giveup: $.noop
+            }
+        },
+        socket: null,
+        listen: function(){
+            var self = this;
+            if( this.isListen ){
+                return
+            }
+            this.isListen = true;
+            this.socket = new WebSocket('ws://'+location.host+'/socket/'+this.get('arg'));
+
+            this.socket.onmessage = function( message ){
+                var data = JSON.parse(message.data);
+                if( data.method in self.get('events').message ){
+                    self.get('events').message[data.method]( data.data, message )
+                }
+            };
+
+            this.socket.onopen = function(e){
+                self.get('events').open.call(self, e);
+                self._retryTimes = 0;
+                self.isConnected = true;
+            };
+
+            this.socket.onclose = function(e){
+                self.get('events').close.call(self, e);
+                self.get('reconnect') && self.reconnect();
+                self.isConnected = false;
+            }
+        },
+        reconnect: function(){
+            if( this._retryTimes >= 3 ){
+                this.get('events').giveup();
+                this.disconnect(true);
+                this.isListen = false;
+                return;
+            }
+            this._retryTimes++;
+            console.warn('websocket disconnect, retry', this._retryTimes);
+            this.socket.close();
+            this.isListen = false;
+            this.listen();
+        },
+        disconnect: function( force ){
+            if( force ){
+                this.set('reconnect', false);
+            }
+            this.socket.close( force );
+        },
+        emit: function( method, data ){
+            return this.send({
+                method: method,
+                data: data
+            })
+        },
+        broadcast: function( method, data ){
+            return this.emit('broadcast', {
+                method: method,
+                data: data
+            });
+        },
+        on: function( method, fn ){
+            if( typeof method != 'string' ) return;
+
+            if( (/^(error|close|open|giveup)$/).test(method) ){
+                this.get('events')[method] = fn;
+            }else{
+                this.get('events').message[method] = fn;
+            }
+        },
+        send: function( data ){
+            return this.socket.send(data)
+        }
+    });
+
+    return function( events, reconnect ){
+        return new Socket( events, reconnect )
+    }
+});

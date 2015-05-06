@@ -178,7 +178,7 @@ func init() {
 				if err != nil {
 					return helper.Error(helper.ParamsError)
 				}
-				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
+				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg, Pre: true})
 				client.AuthorEndIndex += len(msg)
 			}
 			r.SendSelf(client, &webSocket.ChatMsg{Method: "userCount", Params: r.GetUserCount()})
@@ -194,7 +194,7 @@ func init() {
 		return helper.Success(JSON.Type{})
 	})
 
-	redis.OnEmpity(func(roomId int64) bool {
+	redis.OnEmpty(func(roomId int64) bool {
 		msg := models.ListMessage(roomId)
 		size := len(msg)
 		args := make(map[int64]string)

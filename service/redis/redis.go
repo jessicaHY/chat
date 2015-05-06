@@ -22,7 +22,7 @@ const (
 	UserPre   = "user:"
 )
 
-var onEmpity = func(int64) bool { return false }
+var onEmpty = func(int64) bool { return false }
 
 func init() {
 	pool = &redis.Pool{
@@ -46,8 +46,8 @@ func init() {
 	}
 }
 
-func OnEmpity(callback func(int64) bool) {
-	onEmpity = callback
+func OnEmpty(callback func(int64) bool) {
+	onEmpty = callback
 }
 
 func ZAddUserMsg(roomId int64, content string) (int, error) {
@@ -136,6 +136,6 @@ func checkAuthroMsgExisted(roomId int64) {
 		return
 	}
 	if !exists {
-		onEmpity(roomId)
+		onEmpty(roomId)
 	}
 }
