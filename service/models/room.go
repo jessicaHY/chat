@@ -83,6 +83,20 @@ func ListNormalRoom(hostId int, hostType HostType) ([]RoomTable, error) {
 	return rs, err
 }
 
+func LastNormalRoom(hostId int, hostType HostType) (RoomTable, helper.ErrorType) {
+	hostIt := helper.Int64(hostId)*10000 + helper.Int64(int8(hostType))
+	rs := []RoomTable{}
+	err := engine.Where("host_it=? and status=?", hostIt, Normal).Desc("id").Limit(1, 0).Find(&rs)
+	if err != nil {
+		return RoomTable{}, helper.DbError
+	}
+	if len(rs) == 0 {
+		return RoomTable{}, helper.EmptyError
+	} else {
+		return rs[0], helper.NoError
+	}
+}
+
 func (r *RoomTable) GetHostId() int {
 	return int(r.HostIt / 10000)
 }
