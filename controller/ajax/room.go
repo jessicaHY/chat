@@ -14,6 +14,21 @@ import (
 	"log"
 )
 
+func GetRoomByBookId(params martini.Params, rend render.Render) {
+	bookId, err := strconv.Atoi(params["bookId"])
+	if err != nil {
+		log.Println(err)
+		rend.JSON(403, helper.Error(helper.ParamsError))
+		return
+	}
+	r, err2 := models.LastNormalRoom(bookId, models.BOOK)
+	if err2 != helper.NoError {
+		rend.JSON(404, helper.Error(err2))
+		return
+	}
+	rend.JSON(200, helper.Success(r))
+}
+
 func RoomInfo(params martini.Params, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
@@ -22,7 +37,7 @@ func RoomInfo(params martini.Params, rend render.Render) {
 		return
 	}
 	r, err := models.GetRoom(roomId)
-	if err != nil || r == nil {
+	if err != nil {
 		log.Println(err)
 		rend.JSON(404, helper.Error(helper.ParamsError))
 		return
