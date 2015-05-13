@@ -21,9 +21,9 @@ func GetRoomByBookId(params martini.Params, rend render.Render) {
 		rend.JSON(403, helper.Error(helper.ParamsError))
 		return
 	}
-	r, err2 := models.LastNormalRoom(bookId, models.BOOK)
-	if err2 != helper.NoError {
-		rend.JSON(404, helper.Error(err2))
+	r, err1 := models.LastNormalRoom(bookId, models.BOOK)
+	if err1 != helper.NoError {
+		rend.JSON(404, helper.Error(err1))
 		return
 	}
 	rend.JSON(200, helper.Success(r))
