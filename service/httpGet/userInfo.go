@@ -4,7 +4,6 @@ import (
 	"chatroom/helper"
 	"chatroom/utils"
 	"chatroom/utils/JSON"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -116,7 +115,7 @@ func GetUserInfo(userId int) (*UserResult, error) {
 	return info, nil
 }
 
-func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*UserResult, error) {
+func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*UserResult, helper.ErrorType) {
 	info := &UserResult{}
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/buy?roomId="+helper.Itoa64(roomId)+"&money="+strconv.Itoa(money), nil)
@@ -125,22 +124,22 @@ func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*UserResult, erro
 	}
 	resp, err := client.Do(req)
 	if resp.Body == nil {
-		return info, err
+		return info, helper.NetworkError
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.IOError
 	}
 	result := string(body)
 	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.DataFormatError
 	}
 	if info.Code == ERROR {
-		return info, errors.New(info.Message)
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
 	return info, nil

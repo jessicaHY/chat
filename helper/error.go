@@ -22,8 +22,20 @@ const (
 	NeedSubscribeError	//需要购买
 	NetworkError
 	NoNeedError
+	IOError
+	DataFormatError
+
+	NoEnoughMoneyError = 105
 )
 
+func GetWingsErrorType(code int) ErrorType {
+	switch(code) {
+	case 5:
+		return NoEnoughMoneyError
+	default:
+		return DefaultError
+	}
+}
 func NewError(msg string, err ...error) error {
 	str := msg
 	if len(err) > 0 && err[0] != nil {
