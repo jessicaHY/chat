@@ -25,13 +25,16 @@ const (
 	IOError
 	DataFormatError
 
-	NoEnoughMoneyError = 105
+	WingsNoLoginError = 101
+	WingsNoEnoughMoneyError = 105
 )
 
 func GetWingsErrorType(code int) ErrorType {
 	switch(code) {
+	case 1:
+		return WingsNoLoginError
 	case 5:
-		return NoEnoughMoneyError
+		return WingsNoEnoughMoneyError
 	default:
 		return DefaultError
 	}
