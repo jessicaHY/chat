@@ -139,8 +139,9 @@ func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*UserResult, help
 		return info, helper.DataFormatError
 	}
 	if info.Code == ERROR {
-		return info, helper.GetWingsErrorType(info.Type)
+		aaa, _ := strconv.Atoi(info.Type)
+		return info, helper.GetWingsErrorType(aaa)
 	}
 	log.Println(info)
-	return info, nil
+	return info, helper.NoError
 }

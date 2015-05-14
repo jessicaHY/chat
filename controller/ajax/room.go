@@ -191,10 +191,10 @@ func BuyRoom(params martini.Params, req *http.Request, rend render.Render) {
 		rend.JSON(200, helper.Error(helper.NoNeedError))
 		return
 	}
-	info, err = httpGet.BuyRoom(req.Cookies(), roomId, r.Price)
+	info, errType := httpGet.BuyRoom(req.Cookies(), roomId, r.Price)
 	if info.Code == httpGet.SUCCESS && info.Data.Subscribed {
 		rend.JSON(200, helper.Success())
 	} else {
-		rend.JSON(200, helper.Error(helper.DefaultError))
+		rend.JSON(200, helper.Error(errType))
 	}
 }
