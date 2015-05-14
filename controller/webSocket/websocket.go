@@ -47,28 +47,9 @@ const (
 
 func PreCheck(params martini.Params, rend render.Render, req *http.Request, context martini.Context) {
 	log.Println("PreCheck....")
-	roomId := helper.Int64(params["roomId"])
-	log.Println(roomId)
-	r, err := models.GetRoom(roomId)
-	if err != nil || r == nil {
-		log.Println(err)
-		rend.JSON(404, helper.Error(helper.EmptyError))
+	var suc, roomId, info = UserCheck(params, rend, req)
+	if !suc {
 		return
-	}
-	if r.Status == models.Closed {
-		rend.JSON(403, helper.Error(helper.ClosedError))
-		return
-	}
-	info, _ := httpGet.GetLoginUserInfo(req.Cookies(), roomId)
-	if r.Price > 0 { //免费的未登陆可以进入
-		if info.Code != httpGet.SUCCESS || info.Data.Id <= 0 {
-			rend.JSON(403, helper.Error(helper.NoLoginError))
-			return
-		}
-		if info.Data.Id != r.UserId && !info.Data.Subscribed {
-			rend.JSON(403, helper.Error(helper.NeedSubscribeError))
-			return
-		}
 	}
 	if info.Data != nil {
 		context.Set(reflect.TypeOf(info.Data.Id), reflect.ValueOf(info.Data.Id))
@@ -78,6 +59,34 @@ func PreCheck(params martini.Params, rend render.Render, req *http.Request, cont
 	}
 	context.Set(reflect.TypeOf(roomId), reflect.ValueOf(roomId))
 	//	context.Next()
+}
+
+func UserCheck(params martini.Params, rend render.Render, req *http.Request) (bool, int64, *httpGet.UserResult) {
+	roomId := helper.Int64(params["roomId"])
+	log.Println(roomId)
+	r, err := models.GetRoom(roomId)
+	if err != nil || r == nil {
+		log.Println(err)
+		rend.JSON(200, helper.Error(helper.EmptyError))
+		return false, roomId, nil
+	}
+	if r.Status == models.Closed {
+		rend.JSON(200, helper.Error(helper.ClosedError))
+		return false, roomId, nil
+	}
+	info, _ := httpGet.GetLoginUserInfo(req.Cookies(), roomId)
+	if r.Price > 0 { //免费的未登陆可以进入
+		if info.Code != httpGet.SUCCESS || info.Data.Id <= 0 {
+			rend.JSON(200, helper.Error(helper.NoLoginError))
+			return false, roomId, nil
+		}
+		if info.Data.Id != r.UserId && !info.Data.Subscribed {
+			rend.JSON(200, helper.Error(helper.NeedSubscribeError))
+			return false, roomId, info
+		}
+	}
+	rend.JSON(200, helper.Success())
+	return true, roomId, info
 }
 
 func HandlerSocket(context martini.Context, receiver <-chan *webSocket.ChatMsg, sender chan<- *webSocket.ChatMsg, done <-chan bool, disconnect chan<- int, errc <-chan error) (int, string) {
