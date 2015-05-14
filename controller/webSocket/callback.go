@@ -110,6 +110,8 @@ func init() {
 					uMsg.Id = tMsg.Id
 					uMsg.CreateTime = tMsg.CreateTime
 					uMsg.Info = GetUserInfo(tMsg.UserId)
+					uMsg.UserType = Constants.Writer
+					uMsg.MessageType = Constants.IsContent
 					log.Println(uMsg)
 
 					//save to redis
@@ -128,6 +130,8 @@ func init() {
 					uMsg.Id = 0
 					uMsg.CreateTime = time.Now()
 					uMsg.Info = GetUserInfo(client.UserId)
+					uMsg.UserType = Constants.User
+					uMsg.MessageType = Constants.IsContent
 					log.Println(uMsg)
 
 					//save to redis
