@@ -8,6 +8,9 @@ import (
 	"chatroom/service/webSocket"
 	sockets "github.com/beatrichartz/martini-sockets"
 	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
+	"net/http"
+	"chatroom/helper"
 )
 
 type Routes struct{}
@@ -28,7 +31,14 @@ func (ctn *Routes) SetRouter(m *martini.ClassicMartini) {
 	m.Get("/room/list/:bookId", ajax.QueryRoom)
 	m.Get("/room/buy/:roomId", ajax.BuyRoom)
 
-	m.Get("/room/check/:roomId", ctrlWebSocket.UserCheck)
+	m.Get("/room/check/:roomId", func(params martini.Params, rend render.Render, req *http.Request){
+		if _, _, err, _ := ctrlWebSocket.UserCheck(params, req); err != helper.NoError {
+			rend.JSON(200, helper.Error(err))
+		} else {
+			rend.JSON(200, helper.Success())
+		}
+
+	})
 
 	m.Post("/room/shutup/add", ajax.AddShutup)
 	m.Post("/room/shutup/del", ajax.DelShutup)

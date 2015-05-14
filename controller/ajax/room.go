@@ -80,7 +80,7 @@ func AddRoom(req *http.Request, rend render.Render) {
 		return
 	}
 	log.Println(r)
-	rend.JSON(200, helper.Success(JSON.Type{}))
+	rend.JSON(200, helper.Success(r))
 }
 
 func EditRoom(params martini.Params, req *http.Request, rend render.Render) {
@@ -169,20 +169,20 @@ func BuyRoom(params martini.Params, req *http.Request, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
 	if roomId <= 0 {
-		rend.JSON(404, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 	r, err := models.GetRoom(roomId)
 	if err != nil {
 		log.Println(err)
-		rend.JSON(404, helper.Error(helper.EmptyError))
+		rend.JSON(200, helper.Error(helper.EmptyError))
 		return
 	}
 	//get logined user info
 	info, err := httpGet.GetLoginUserInfo(req.Cookies(), roomId)
 	if info.Code != httpGet.SUCCESS {
 		log.Println(err)
-		rend.JSON(500, helper.Error(helper.NetworkError))
+		rend.JSON(200, helper.Error(helper.NetworkError))
 		return
 	}
 	//author
@@ -193,8 +193,8 @@ func BuyRoom(params martini.Params, req *http.Request, rend render.Render) {
 	}
 	info, err = httpGet.BuyRoom(req.Cookies(), roomId, r.Price)
 	if info.Code == httpGet.SUCCESS && info.Data.Subscribed {
-		rend.JSON(200, helper.Success(JSON.Type{}))
+		rend.JSON(200, helper.Success())
 	} else {
-		rend.JSON(500, helper.Error(helper.DefaultError))
+		rend.JSON(200, helper.Error(helper.DefaultError))
 	}
 }

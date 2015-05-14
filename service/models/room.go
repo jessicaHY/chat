@@ -8,13 +8,13 @@ import (
 )
 
 type RoomTable struct {
-	Id        int64      `xorm:"id pk autoincr"`
-	HostIt    int64      `xorm:"host_it index"`
-	UserId    int        `xorm:"user_id"`
-	Price     int        `xorm:"price"`
-	Content   string     `xorm:"content"`
-	StartTime time.Time  `xorm:"start_time"`
-	Status    RoomStatus `xorm:"status"`
+	Id        int64      `xorm:"id pk autoincr" json:"id"`
+	HostIt    int64      `xorm:"host_it index" json:"hostIt"`
+	UserId    int        `xorm:"user_id"  json:"userId"`
+	Price     int        `xorm:"price"  json:"price"`
+	Content   string     `xorm:"content"  json:"content"`
+	StartTime time.Time  `xorm:"start_time"  json:"startTime"`
+	Status    RoomStatus `xorm:"status"  json:"status"`
 }
 
 type RoomStatus int8
