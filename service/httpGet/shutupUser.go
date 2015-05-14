@@ -17,7 +17,7 @@ type ShutResult struct {
 }
 
 func GetShutUpList(bookId int) (map[int]int, error) {
-	resp, err := http.Get(Constants.HOST + "/ajax/room/shut/user/list?bookId=" + strconv.Itoa(bookId))
+	resp, err := http.Get(Constants.HOST + "/system/room/shut/user/list?bookId=" + strconv.Itoa(bookId))
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -51,7 +51,7 @@ func AddShutUp(cookies []*http.Cookie, roomId int64, userId int, days int) (*Shu
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", Constants.HOST+"/ajax/room/shutup/add",
+	req, err := http.NewRequest("POST", Constants.HOST+"/system/room/shutup/add",
 		strings.NewReader("bookId=" + strconv.Itoa(r.GetHostId()) + "&userId=" + strconv.Itoa(userId) + "&days=" + strconv.Itoa(days)))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	for _, v := range cookies {
@@ -85,7 +85,7 @@ func DelShutUp(cookies []*http.Cookie, roomId int64, userId int) (*ShutResult, e
 		return info, err
 	}
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", Constants.HOST+"/ajax/room/shutup/del",
+	req, err := http.NewRequest("POST", Constants.HOST+"/system/room/shutup/del",
 		strings.NewReader("bookId=" + strconv.Itoa(r.GetHostId()) + "&userId=" + strconv.Itoa(userId)))
 	for _, v := range cookies {
 		req.AddCookie(v)
