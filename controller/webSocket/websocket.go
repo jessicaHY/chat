@@ -10,18 +10,20 @@ import (
 	"github.com/go-martini/martini"
 	"net/http"
 	"reflect"
-	"time"
 	"log"
+	"time"
 )
 
 var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
 
 type UserMsg struct {
-	Id         int64             `json:"id"`
-	Content    string            `json:"content"`
-	CreateTime time.Time         `json:"createTime"`
-	Type	   int				 `json:"type"`
-	Info       *httpGet.UserInfo `json:"userInfo"`
+	Id         int64            	`json:"id"`
+	Content    string           	`json:"content"`
+	CreateTime time.Time        	`json:"createTime"`
+	UserType	   	int				`json:"user_type"`		//用户类型
+	ContentType		models.ContentType				`json:"content_type"`	//内容类型（章节，聊天）
+	MessageType		int				`json:"message_type"`	//消息类型(内容，进入，离开)
+	Info       *httpGet.UserInfo 	`json:"userInfo"`
 }
 
 type Param struct {
@@ -29,20 +31,6 @@ type Param struct {
 	Size int  `json:"size"`
 	UserId int	`json:"userId"`
 }
-
-const (
-	User httpGet.UserType = iota
-	Writer
-	Staff
-)
-const (
-	ContentType = iota
-	InType
-	OutType
-)
-const (
-	FIRST_CONTENT_SIZE = 3 //进入聊天室时默认发送几条消息
-)
 
 func PreCheck(params martini.Params, req *http.Request, context martini.Context) {
 	log.Println("PreCheck....")

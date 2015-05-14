@@ -2,7 +2,7 @@ package httpGet
 
 import (
 	"chatroom/helper"
-	"chatroom/utils"
+	"chatroom/utils/Constants"
 	"chatroom/utils/JSON"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +10,6 @@ import (
 	"log"
 )
 
-type UserType int
 type UserInfo struct {
 	Id         int    `json:"id"` //进入直播的时候到wings获取用户信息
 	Name       string `json:"name"`
@@ -40,7 +39,7 @@ func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, error) {
 	info := &UserResult{}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/author/check?bookId="+strconv.Itoa(bookId), nil)
+	req, err := http.NewRequest("GET", Constants.HOST+"/system/room/author/check?bookId="+strconv.Itoa(bookId), nil)
 	for _, v := range cookies {
 		req.AddCookie(v)
 	}
@@ -68,7 +67,7 @@ func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, error) {
 func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error) {
 	info := &UserResult{}
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/login/info?roomId="+helper.Itoa64(roomId), nil)
+	req, err := http.NewRequest("GET", Constants.HOST+"/system/room/login/info?roomId="+helper.Itoa64(roomId), nil)
 	for _, v := range cookies {
 		req.AddCookie(v)
 	}
@@ -94,7 +93,7 @@ func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error)
 
 func GetUserInfo(userId int) (*UserResult, error) {
 	info := &UserResult{}
-	resp, err := http.Get(utils.HOST + "/ajax/room/user/info?userId=" + strconv.Itoa(userId))
+	resp, err := http.Get(Constants.HOST + "/system/room/user/info?userId=" + strconv.Itoa(userId))
 	if err != nil {
 		log.Println(err)
 		return info, err
@@ -115,10 +114,10 @@ func GetUserInfo(userId int) (*UserResult, error) {
 	return info, nil
 }
 
-func BuyRoom(cookies []*http.Cookie, roomId int64, money int) (*UserResult, helper.ErrorType) {
+func BuyRoom(cookies []*http.Cookie, roomId int64, money int, bookId int) (*UserResult, helper.ErrorType) {
 	info := &UserResult{}
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", utils.HOST+"/ajax/room/buy?roomId="+helper.Itoa64(roomId)+"&money="+strconv.Itoa(money), nil)
+	req, err := http.NewRequest("GET", Constants.HOST+"/system/room/buy?roomId="+helper.Itoa64(roomId)+"&money="+strconv.Itoa(money)+"&bookId=" + strconv.Itoa(bookId), nil)
 	for _, v := range cookies {
 		req.AddCookie(v)
 	}

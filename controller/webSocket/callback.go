@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"time"
 	"log"
+	"chatroom/utils/Constants"
 )
 
 func NotifyAllClients(r *webSocket.Room) {
@@ -30,7 +31,11 @@ func init() {
 		if client.UserId <= 0 {
 			return
 		}
-		uMsg := &UserMsg{Id:0, Content: "", Type:InType, CreateTime:time.Now(), Info:GetUserInfo(client.UserId)}
+		var userType = Constants.User
+		if client.UserId == r.AuthorId {
+			userType = Constants.Writer
+		}
+		uMsg := &UserMsg{0, "", time.Now(), userType, models.Reply, Constants.IsIn, GetUserInfo(client.UserId)}
 		log.Println(uMsg)
 		//save to redis
 		b, err := json.Marshal(uMsg)
@@ -47,9 +52,9 @@ func init() {
 		//发三条信息
 		uCount, aCount, _ := redis.ZCard(r.RoomId)
 		client.UserMsgIndex = uCount
-		if aCount > FIRST_CONTENT_SIZE { //确定该client对应的作者信息的起始和结束
-			client.AuthorStartIndex = aCount - FIRST_CONTENT_SIZE
-			client.AuthorEndIndex = aCount - FIRST_CONTENT_SIZE
+		if aCount > Constants.FIRST_CONTENT_SIZE { //确定该client对应的作者信息的起始和结束
+			client.AuthorStartIndex = aCount - Constants.FIRST_CONTENT_SIZE
+			client.AuthorEndIndex = aCount - Constants.FIRST_CONTENT_SIZE
 		}
 		log.Println(client)
 
@@ -66,7 +71,11 @@ func init() {
 		if userId <= 0 {
 			return
 		}
-		uMsg := &UserMsg{Id:0, Content: "", Type:OutType, CreateTime:time.Now(), Info:GetUserInfo(userId)}
+		var userType = Constants.User
+		if userId == r.AuthorId {
+			userType = Constants.Writer
+		}
+		uMsg := &UserMsg{0, "", time.Now(), userType, models.Reply, Constants.IsOut, GetUserInfo(userId)}
 		log.Println(uMsg)
 		//save to redis
 		b, err := json.Marshal(uMsg)
@@ -78,75 +87,65 @@ func init() {
 		delete(UserInfoMap, userId)
 		NotifyAllClients(r)
 	})
-	//作者发信息
-	webSocket.OnEmit("authorSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		log.Println("authorSend")
-		if client.UserId != r.AuthorId {
-			return helper.Error(helper.NoRightError)
-		}
-		uMsg := &UserMsg{}
-		if err := JSON.ParseToStruct(msg.Params, uMsg); err == nil {
-			//insert into db
-			tMsg, err := models.AddMessage(client.UserId, r.RoomId, models.Chapter, uMsg.Content)
-			if err != nil {
-				log.Println(err)
-				return helper.Error(helper.ParamsError)
-			}
-			uMsg.Id = tMsg.Id
-			uMsg.CreateTime = tMsg.CreateTime
-			uMsg.Info = GetUserInfo(tMsg.UserId)
-			log.Println(uMsg)
 
-			//save to redis
-			b, err := json.Marshal(uMsg)
-			if err != nil {
-				log.Println(err)
-				return helper.Error(helper.ParamsError)
-			}
-			_, err = redis.ZAddAuthorMsg(r.RoomId, tMsg.Id, string(b))
-			if err != nil {
-				log.Println(err)
-				return helper.Error(helper.ParamsError)
-			}
-			//tell thread to tell everyclient
-			NotifyAllClients(r)
-			return helper.Success(JSON.Type{})
-		}
-		return helper.Error(helper.ParamsError)
-	})
+	webSocket.OnEmit("sendMessage", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
 
-	//用户发消息
-	webSocket.OnEmit("userSend", func(msg *webSocket.ChatMsg, client *webSocket.SocketClient, r *webSocket.Room) JSON.Type {
-		log.Println("userSend...")
-		if client.UserId <= 0 {
-			return helper.Error(helper.NoLoginError)
-		}
-		if _, ok := r.ShutUpUserIds[client.UserId]; ok {
-			return helper.Error(helper.NoRightError)
-		}
-		uMsg := &UserMsg{}
-		if err := JSON.ParseToStruct(msg.Params, uMsg); err == nil {
-			uMsg.Id = 0
-			uMsg.CreateTime = time.Now()
-			uMsg.Info = GetUserInfo(client.UserId)
-			uMsg.Type = ContentType
-			log.Println(uMsg)
-
-			//save to redis
-			b, err := json.Marshal(uMsg)
-			if err != nil {
-				return helper.Error(helper.ParamsError)
+			if client.UserId <= 0 {//未登录
+				return helper.Error(helper.NoLoginError)
 			}
-			_, err = redis.ZAddUserMsg(r.RoomId, string(b))
-			if err != nil {
-				return helper.Error(helper.ParamsError)
+			if _, ok := r.ShutUpUserIds[client.UserId]; ok {//被封禁
+				return helper.Error(helper.NoRightError)
 			}
-			//tell thread to tell everyclient
-			NotifyAllClients(r)
-			return helper.Success(JSON.Type{})
-		}
 
-		return helper.Error(helper.ParamsError)
+			uMsg := &UserMsg{}
+			if err := JSON.ParseToStruct(msg.Params, uMsg); err == nil {
+
+				if client.UserId == r.AuthorId {
+					//insert into db
+					tMsg, err := models.AddMessage(client.UserId, r.RoomId, uMsg.ContentType, uMsg.Content)
+					if err != nil {
+						log.Println(err)
+						return helper.Error(helper.ParamsError)
+					}
+					uMsg.Id = tMsg.Id
+					uMsg.CreateTime = tMsg.CreateTime
+					uMsg.Info = GetUserInfo(tMsg.UserId)
+					log.Println(uMsg)
+
+					//save to redis
+					b, err := json.Marshal(uMsg)
+					if err != nil {
+						log.Println(err)
+						return helper.Error(helper.ParamsError)
+					}
+					_, err = redis.ZAddAuthorMsg(r.RoomId, tMsg.Id, string(b))
+					if err != nil {
+						log.Println(err)
+						return helper.Error(helper.ParamsError)
+					}
+
+				} else {
+					uMsg.Id = 0
+					uMsg.CreateTime = time.Now()
+					uMsg.Info = GetUserInfo(client.UserId)
+					log.Println(uMsg)
+
+					//save to redis
+					b, err := json.Marshal(uMsg)
+					if err != nil {
+						return helper.Error(helper.ParamsError)
+					}
+					_, err = redis.ZAddUserMsg(r.RoomId, string(b))
+					if err != nil {
+						return helper.Error(helper.ParamsError)
+					}
+				}
+
+				//tell thread to tell everyclient
+				NotifyAllClients(r)
+				return helper.Success()
+			}
+			return helper.Error(helper.ParamsError)
 	})
 
 	//用户点击获取更多
