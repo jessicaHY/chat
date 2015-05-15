@@ -16,6 +16,7 @@ import (
 )
 
 var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
+var UserFansMap map[string]int = make(map[string]int)
 
 type UserMsg struct {
 	Id         int64            	`json:"id"`
@@ -91,9 +92,12 @@ func GetUserList(params martini.Params, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
 	userIds := webSocket.ListUser(roomId)
-	userInfos := make([]*httpGet.UserInfo, len(userIds), len(userIds))
-	for id := range userIds {
-		userInfos = append(userInfos, GetUserInfo(id))
+	log.Println("aaaaaa", userIds, len(userIds));
+	userInfos := make([]*httpGet.UserInfo, 0, len(userIds))
+	for _, id := range userIds {
+		if id > 0 {
+			userInfos = append(userInfos, GetUserInfo(id))
+		}
 	}
 	rend.JSON(200, userInfos)
 }

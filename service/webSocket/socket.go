@@ -194,9 +194,11 @@ func (r *Room) GetUserCount() [2]int {
 
 func ListUser(roomId int64) []int {
 	r := GetRoom(roomId)
-	userIds := make([]int, len(r.clientsMap), len(r.clientsMap))
+	userIds := make([]int, 0, len(r.clientsMap))
 	for k, _ := range r.clientsMap {
-		userIds = append(userIds, k)
+		if k > 0 {
+			userIds = append(userIds, k)
+		}
 	}
 	return userIds;
 }
