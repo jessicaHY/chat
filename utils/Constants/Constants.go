@@ -26,6 +26,14 @@ const (
 	IsIn
 	IsOut
 )
+type GroupType int8
 const (
 	FIRST_CONTENT_SIZE = 3 //进入聊天室时默认发送几条消息
+	STATUS_NORMAL = 0
+	STATUS_DELETED = -1
+
+	GROUP_HEIYAN GroupType = 1
+	GROUP_RUOCHU GroupType = 2
+	GROUP_RUOXIA GroupType = 3
+
 )

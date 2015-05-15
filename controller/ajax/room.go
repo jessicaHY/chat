@@ -198,3 +198,58 @@ func BuyRoom(params martini.Params, req *http.Request, rend render.Render) {
 		rend.JSON(200, helper.Error(errType))
 	}
 }
+
+func DonateRoom(params martini.Params, req *http.Request, rend render.Render) {
+	roomId := helper.Int64(params["roomId"])
+	log.Println(roomId)
+	if roomId <= 0 {
+		rend.JSON(200, helper.Error(helper.ParamsError))
+		return
+	}
+	giftId := helper.Int64(req.FormValue("giftId"))
+	if giftId <= 0 {
+		rend.JSON(200, helper.Error(helper.ParamsError))
+		return
+	}
+	count, err := strconv.Atoi(req.FormValue("count"))
+	if err != nil || count <= 0 {
+		count = 1
+	}
+	r, err := models.GetRoom(roomId)
+	if err != nil {
+		log.Println(err)
+		rend.JSON(200, helper.Error(helper.EmptyError))
+		return
+	}
+	if r == nil {
+		rend.JSON(200, helper.Error(helper.EmptyError))
+		return
+	}
+	userId, err := httpGet.GetUserIdFromCookie(req.Cookies())
+	if err != nil || userId == 0 {
+		rend.JSON(200, helper.Error(helper.NoLoginError))
+		return
+	}
+
+	d, errType := models.AddDonate(roomId, giftId, userId, count)
+	if errType != helper.NoError {
+		rend.JSON(200, helper.Error(errType))
+		return
+	}
+	info, errType := httpGet.Donate(req.Cookies(), userId, d.Id, r.GetHostId(), d.Price)
+	if errType != helper.NoError {
+		rend.JSON(200, helper.Error(errType))
+		return
+	}
+	if info.Code == httpGet.SUCCESS {
+		err = models.UpdateDonate(d.Id)
+		if err != nil {
+			log.Println(err)
+			rend.JSON(200, helper.Error(helper.WingsSuccessDbFail))
+		} else {
+			rend.JSON(200, helper.Success())
+		}
+	} else {
+		rend.JSON(200, helper.Error(helper.DefaultError))
+	}
+}

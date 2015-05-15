@@ -20,7 +20,7 @@ func init() {
 }
 
 func GlobalInit() {
-	err := engine.Sync2(new(MsgTable), new(RoomTable))
+	err := engine.Sync2(new(MsgTable), new(RoomTable), new(GiftTable), new(DonateTable))
 	if err != nil {
 		log.Fatalln(err)
 	}

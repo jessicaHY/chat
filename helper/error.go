@@ -27,6 +27,7 @@ const (
 
 	WingsNoLoginError = 101
 	WingsNoEnoughMoneyError = 105
+	WingsSuccessDbFail = 200
 )
 
 func GetWingsErrorType(code int) ErrorType {

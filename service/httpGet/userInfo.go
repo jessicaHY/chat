@@ -144,3 +144,12 @@ func BuyRoom(cookies []*http.Cookie, roomId int64, money int, bookId int) (*User
 	log.Println(info)
 	return info, helper.NoError
 }
+
+func GetUserIdFromCookie(cookies []*http.Cookie) (int, error) {
+	for _, v := range cookies {
+		if v.Name == "ud" {
+			return strconv.Atoi(v.Value)
+		}
+	}
+	return 0, nil
+}
