@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"log"
 	"time"
+	"github.com/martini-contrib/render"
 )
 
 var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
@@ -84,6 +85,17 @@ func HandlerSocket(context martini.Context, receiver <-chan *webSocket.ChatMsg, 
 	uId = int(userId)
 	log.Println("to handler socket...", roomId, userId)
 	return webSocket.AppendClient(uId, roomId, receiver, sender, done, disconnect, errc)
+}
+
+func GetUserList(params martini.Params, rend render.Render) {
+	roomId := helper.Int64(params["roomId"])
+	log.Println(roomId)
+	userIds := webSocket.ListUser(roomId)
+	userInfos := make([]*httpGet.UserInfo, len(userIds), len(userIds))
+	for id := range userIds {
+		userInfos = append(userInfos, GetUserInfo(id))
+	}
+	rend.JSON(200, userInfos)
 }
 
 func GetUserInfo(userId int) *httpGet.UserInfo {

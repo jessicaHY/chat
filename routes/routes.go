@@ -40,6 +40,7 @@ func (ctn *Routes) SetRouter(m *martini.ClassicMartini) {
 
 	})
 
+	m.Get("/room/listuser/:roomId", ctrlWebSocket.GetUserList)
 	m.Post("/room/shutup/add", ajax.AddShutup)
 	m.Post("/room/shutup/del", ajax.DelShutup)
 }
