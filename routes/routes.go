@@ -28,6 +28,7 @@ func (ctn *Routes) SetRouter(m *martini.ClassicMartini) {
 	m.Post("/room/add", ajax.AddRoom)
 	m.Post("/room/edit/:roomId", ajax.EditRoom)
 	m.Get("/room/close/:roomId", ajax.CloseRoom)
+	m.Get("/room/end/:roomId", ajax.EndRoom)
 	m.Get("/room/list/:bookId", ajax.QueryRoom)
 	m.Get("/room/buy/:roomId", ajax.BuyRoom)
 

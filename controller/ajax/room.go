@@ -122,6 +122,17 @@ func EditRoom(params martini.Params, req *http.Request, rend render.Render) {
 	rend.JSON(200, helper.Success(JSON.Type{}))
 }
 
+func EndRoom(params martini.Params, req *http.Request, rend render.Render) {
+	roomId := helper.Int64(params["roomId"])
+	log.Println(roomId)
+	if roomId <= 0 {
+		rend.JSON(404, helper.Error(helper.ParamsError))
+		return
+	}
+	//query room by roomId
+	updateRoom(roomId, models.Ended, req, rend)
+}
+
 func CloseRoom(params martini.Params, req *http.Request, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
@@ -130,6 +141,10 @@ func CloseRoom(params martini.Params, req *http.Request, rend render.Render) {
 		return
 	}
 	//query room by roomId
+	updateRoom(roomId, models.Closed, req, rend)
+}
+
+func updateRoom(roomId int64, status models.RoomStatus, req *http.Request, rend render.Render) {
 	r, err := models.GetRoom(roomId)
 	if err != nil {
 		log.Println(err)
@@ -141,7 +156,7 @@ func CloseRoom(params martini.Params, req *http.Request, rend render.Render) {
 		rend.JSON(404, helper.Error(helper.NoLoginError))
 		return
 	}
-	err = models.UpdateRoomStatus(roomId, models.Closed)
+	err = models.UpdateRoomStatus(roomId, status)
 	if err != nil {
 		log.Println(err)
 		rend.JSON(404, helper.Error(helper.ParamsError))
