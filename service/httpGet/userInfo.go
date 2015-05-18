@@ -16,6 +16,8 @@ type UserInfo struct {
 	Icon       string `json:"icon"`
 	IsAuthor   bool   `json:"isAuthor"`
 	Subscribed bool   `json:"subscribed"`
+	FansNum		int		`json:"fansNum"`	//粉丝值
+	FansTitle	string 	`json:"fansTitle"`
 }
 
 type Result struct {
@@ -91,9 +93,9 @@ func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error)
 	return info, nil
 }
 
-func GetUserInfo(userId int) (*UserResult, error) {
+func GetUserInfo(bookId int, userId int) (*UserResult, error) {
 	info := &UserResult{}
-	resp, err := http.Get(Constants.HOST + "/system/room/user/info?userId=" + strconv.Itoa(userId))
+	resp, err := http.Get(Constants.HOST + "/system/room/user/info?userId=" + strconv.Itoa(userId) + "&bookId=" + strconv.Itoa(bookId))
 	if err != nil {
 		log.Println(err)
 		return info, err
@@ -138,8 +140,7 @@ func BuyRoom(cookies []*http.Cookie, roomId int64, money int, bookId int) (*User
 		return info, helper.DataFormatError
 	}
 	if info.Code == ERROR {
-		aaa, _ := strconv.Atoi(info.Type)
-		return info, helper.GetWingsErrorType(aaa)
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
 	return info, helper.NoError

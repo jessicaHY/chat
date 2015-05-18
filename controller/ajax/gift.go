@@ -4,7 +4,6 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"chatroom/service/models"
-	"strconv"
 	"chatroom/helper"
 	"chatroom/utils/Constants"
 	"log"
@@ -12,11 +11,7 @@ import (
 )
 
 func ListGift(req *http.Request, rend render.Render) {
-	group, err := strconv.Atoi(req.FormValue("group"))
-	if err != nil {
-		rend.JSON(200, helper.Error(helper.ParamsError))
-		return
-	}
+	group := Constants.GetGroupFromReq(req)
 	gt := Constants.GroupType(group)
 	rss, err := models.ListGift(gt)
 	if err != nil {

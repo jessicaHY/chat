@@ -10,6 +10,7 @@ import (
 	"time"
 	"log"
 	"chatroom/utils/Constants"
+	"chatroom/service/httpGet"
 )
 
 func NotifyAllClients(r *webSocket.Room) {
@@ -35,7 +36,7 @@ func init() {
 		if client.UserId == r.AuthorId {
 			userType = Constants.Writer
 		}
-		uMsg := &UserMsg{0, "", time.Now(), userType, models.Reply, Constants.IsIn, GetUserInfo(client.UserId)}
+		uMsg := &UserMsg{0, "", time.Now(), userType, models.Reply, Constants.IsIn, GetUserInfo(r.RoomId, r.BookId, client.UserId)}
 		log.Println(uMsg)
 		//save to redis
 		b, err := json.Marshal(uMsg)
@@ -53,7 +54,7 @@ func init() {
 		uCount, aCount, _ := redis.ZCard(r.RoomId)
 		client.UserMsgIndex = uCount
 		if aCount > Constants.FIRST_CONTENT_SIZE { //确定该client对应的作者信息的起始和结束
-			client.AuthorStartIndex = aCount - Constants.FIRST_CONTENT_SIZE
+			client.AuthorStartIndex = aCount - Constants.FIRST_CONTENT_SIZE - 1 //从0开始算
 			client.AuthorEndIndex = aCount - Constants.FIRST_CONTENT_SIZE
 		}
 		log.Println(client)
@@ -75,7 +76,7 @@ func init() {
 		if userId == r.AuthorId {
 			userType = Constants.Writer
 		}
-		uMsg := &UserMsg{0, "", time.Now(), userType, models.Reply, Constants.IsOut, GetUserInfo(userId)}
+		uMsg := &UserMsg{0, "", time.Now(), userType, models.Reply, Constants.IsOut, GetUserInfo(r.RoomId, r.BookId, userId)}
 		log.Println(uMsg)
 		//save to redis
 		b, err := json.Marshal(uMsg)
@@ -84,7 +85,7 @@ func init() {
 			return
 		}
 		_, err = redis.ZAddUserMsg(r.RoomId, string(b))
-		delete(UserInfoMap, userId)
+		redis.HDelUserInfo(r.RoomId, userId)
 		NotifyAllClients(r)
 	})
 
@@ -109,7 +110,7 @@ func init() {
 					}
 					uMsg.Id = tMsg.Id
 					uMsg.CreateTime = tMsg.CreateTime
-					uMsg.Info = GetUserInfo(tMsg.UserId)
+					uMsg.Info = GetUserInfo(r.RoomId, r.BookId, tMsg.UserId)
 					uMsg.UserType = Constants.Writer
 					uMsg.MessageType = Constants.IsContent
 					log.Println(uMsg)
@@ -129,7 +130,7 @@ func init() {
 				} else {
 					uMsg.Id = 0
 					uMsg.CreateTime = time.Now()
-					uMsg.Info = GetUserInfo(client.UserId)
+					uMsg.Info = GetUserInfo(r.RoomId, r.BookId, client.UserId)
 					uMsg.UserType = Constants.User
 					uMsg.MessageType = Constants.IsContent
 					log.Println(uMsg)
@@ -173,18 +174,23 @@ func init() {
 				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg})
 				client.AuthorEndIndex += len(msg)
 			} else { //获取之前的作者数据
+				log.Println("client.AuthorStartIndex", client.AuthorStartIndex)
+				if client.AuthorStartIndex <= 0 {
+					r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: "", Pre: true})
+					return helper.Success(JSON.Type{})
+				}
 				begin := client.AuthorStartIndex - param.Size
 				if begin < 0 {
 					begin = 0
 				}
-				msg, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, client.AuthorStartIndex, client.AuthorStartIndex)
+				msg, err := GetWebSocketChatMsg(redis.AuthorMessage, r.RoomId, begin, client.AuthorStartIndex)
 				if err != nil {
 					return helper.Error(helper.ParamsError)
 				}
 				r.SendSelf(client, &webSocket.ChatMsg{Method: "authorMessage", Params: msg, Pre: true})
-				client.AuthorEndIndex += len(msg)
+				client.AuthorStartIndex = begin
 			}
-			r.SendSelf(client, &webSocket.ChatMsg{Method: "userCount", Params: r.GetUserCount()})
+//			r.SendSelf(client, &webSocket.ChatMsg{Method: "userCount", Params: r.GetUserCount()})
 			return helper.Success(JSON.Type{})
 		}
 		return helper.Error(helper.ParamsError)
@@ -197,7 +203,7 @@ func init() {
 		return helper.Success(JSON.Type{})
 	})
 
-	redis.OnEmpty(func(roomId int64) bool {
+	redis.OnMessageEmpty(func(roomId int64) bool {
 		msg := models.ListMessage(roomId)
 		size := len(msg)
 		args := make(map[int64]string)
@@ -206,7 +212,7 @@ func init() {
 			uMsg.Id = m.Id
 			uMsg.CreateTime = m.CreateTime
 			uMsg.Content = m.Content
-			uMsg.Info = GetUserInfo(m.UserId)
+			uMsg.Info = GetUserInfo(roomId, 0, m.UserId)
 
 			b, err := json.Marshal(uMsg)
 			if err != nil {
@@ -220,5 +226,28 @@ func init() {
 			log.Println(err)
 		}
 		return size == count
+	})
+
+	redis.OnUserInfoEmpty(func(roomId int64, userId int) bool {
+		r, err := models.GetRoom(roomId)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		result, err := httpGet.GetUserInfo(r.GetHostId(), userId)
+		if err != nil || result.Code != httpGet.SUCCESS {
+			return false
+		}
+		b, err := json.Marshal(result.Data)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		count, err := redis.HSetUserInfo(roomId, userId, string(b))
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		return count == 1
 	})
 }

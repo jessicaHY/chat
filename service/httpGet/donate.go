@@ -11,10 +11,10 @@ import (
 	"chatroom/utils/JSON"
 )
 
-func Donate(cookies []*http.Cookie, userId int, donateId int64, bookId int, price int) (*UserResult, helper.ErrorType) {
+func Donate(cookies []*http.Cookie, userId int, donateId int64, bookId int, price int, group Constants.GroupType, site Constants.SiteType) (*UserResult, helper.ErrorType) {
 	info := &UserResult{}
 	client := &http.Client{}
-	param := "userId=" + strconv.Itoa(userId) + "&donateId=" + helper.Itoa64(donateId) + "&money="+strconv.Itoa(price)+"&bookId=" + strconv.Itoa(bookId)
+	param := "userId=" + strconv.Itoa(userId) + "&donateId=" + helper.Itoa64(donateId) + "&money="+strconv.Itoa(price) +"&bookId=" + strconv.Itoa(bookId) + "&group=" + strconv.Itoa(int(group)) + "&site=" + strconv.Itoa(int(site))
 	req, err := http.NewRequest("POST", Constants.HOST+"/system/room/donate", strings.NewReader(param))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 	for _, v := range cookies {
@@ -37,8 +37,7 @@ func Donate(cookies []*http.Cookie, userId int, donateId int64, bookId int, pric
 		return info, helper.DataFormatError
 	}
 	if info.Code == ERROR {
-		aaa, _ := strconv.Atoi(info.Type)
-		return info, helper.GetWingsErrorType(aaa)
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
 	return info, helper.NoError

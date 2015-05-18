@@ -15,10 +15,10 @@ import (
 	"github.com/martini-contrib/render"
 )
 
-var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
-var UserFansMap map[string]int = make(map[string]int)
+//var UserInfoMap map[int]*httpGet.UserInfo = make(map[int]*httpGet.UserInfo) //缓存用户信息
+//var UserFansMap map[string]int = make(map[string]int)
 
-type UserMsg struct {
+type UserMsg struct {//webSocket.ChatMsg中的content
 	Id         int64            	`json:"id"`
 	Content    string           	`json:"content"`
 	CreateTime time.Time        	`json:"createTime"`
@@ -92,28 +92,66 @@ func GetUserList(params martini.Params, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
 	userIds := webSocket.ListUser(roomId)
-	log.Println("aaaaaa", userIds, len(userIds));
-	userInfos := make([]*httpGet.UserInfo, 0, len(userIds))
-	for _, id := range userIds {
-		if id > 0 {
-			userInfos = append(userInfos, GetUserInfo(id))
-		}
+	log.Println(userIds)
+
+	values, err := redis.HMGetUserInfo(roomId, userIds)
+	if err != nil {
+		log.Println("HMGetUserInfo err: ", err)
+		return
 	}
-	rend.JSON(200, userInfos)
+	log.Println(values)
+	userInfos := make([]*httpGet.UserInfo, 0, len(userIds))
+	for _, v := range values {
+		m := httpGet.UserInfo{}
+		err = json.Unmarshal([]byte(v), &m)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		userInfos = append(userInfos, &m)
+	}
+	rend.JSON(200, helper.Success(userInfos))
 }
 
-func GetUserInfo(userId int) *httpGet.UserInfo {
-	info, ok := UserInfoMap[userId]
-	if ok {
-		return info
+func GetUserInfo(roomId int64, bookId int, userId int) *httpGet.UserInfo {
+//	log.Println("GetUserInfo: ", roomId, bookId, userId)
+	result, err := redis.HGetUserInfo(roomId, userId)
+//	log.Println("GetUserInfo: ", result, err)
+	if result == "" {
+		if bookId <= 0 {//获取bookId
+			r, err := models.GetRoom(roomId)
+			if err != nil {
+				log.Println("get room from db err: ", err)
+				return nil
+			}
+			bookId = r.GetHostId()
+		}
+		result, err := httpGet.GetUserInfo(bookId, userId)
+		if err != nil || result.Code != httpGet.SUCCESS {
+			log.Println("get user info from wings err", err)
+			return nil
+		}
+		//save to redis
+		binfo, err := json.Marshal(result.Data)
+		if err != nil {
+			log.Println("info to byte array err: ", err)
+			return nil
+		}
+		_, err = redis.HSetUserInfo(roomId, userId, string(binfo))
+		if err != nil {
+			log.Println("save user info to redis err: ", err)
+			return nil
+		}
+		return result.Data
 	}
 
-	result, err := httpGet.GetUserInfo(userId)
-	if err != nil || result.Code != httpGet.SUCCESS {
+	m := httpGet.UserInfo{}
+	err = json.Unmarshal([]byte(result), &m)
+	if err != nil {
+		log.Println("Unmarshal user info", err)
 		return nil
 	}
-	UserInfoMap[userId] = result.Data
-	return result.Data
+	return &m
 }
 
 func GetWebSocketChatMsg(messageType redis.MessageType, roomId int64, start int, stop int) ([]UserMsg, error) {

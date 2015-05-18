@@ -18,10 +18,11 @@ var onRemove = func(int, *Room) {}
 
 type Room struct {
 	sync.Mutex
-	RoomId        int64
-	AuthorId      int
+	RoomId        	int64
+	BookId			int
+	AuthorId      	int
 	ShutUpUserIds	map[int]int
-	ThreadChannel chan bool //每个room对应一个goroutine来执行任务
+	ThreadChannel 	chan bool //每个room对应一个goroutine来执行任务
 	clientsMap      map[int][]*SocketClient	//一个用户可能从多个终端登录，有多个socket连接
 }
 
@@ -81,7 +82,7 @@ func GetRoom(roomId int64) *Room {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	r := &Room{sync.Mutex{}, roomId, rt.UserId, m, make(chan bool), make(map[int][]*SocketClient)}
+	r := &Room{sync.Mutex{}, roomId, dbRoom.GetHostId(), rt.UserId, m, make(chan bool), make(map[int][]*SocketClient)}
 	RoomMap[roomId] = r
 	go r.NewThreadTask()
 	return r

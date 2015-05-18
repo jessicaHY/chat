@@ -26,16 +26,20 @@ const (
 	DataFormatError
 
 	WingsNoLoginError = 101
+	WingsParamError = 102
 	WingsNoEnoughMoneyError = 105
-	WingsSuccessDbFail = 200
+	WingsSuccessDbFail = 200 //wings操作成功，但是这边存储数据库失败
+
 )
 
-func GetWingsErrorType(code int) ErrorType {
+func GetWingsErrorType(code string) ErrorType {
 	switch(code) {
-	case 1:
+	case "ac-62":
 		return WingsNoLoginError
-	case 5:
+	case "pay-1":
 		return WingsNoEnoughMoneyError
+	case "ob-5":
+		return WingsParamError
 	default:
 		return DefaultError
 	}

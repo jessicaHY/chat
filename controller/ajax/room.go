@@ -12,6 +12,7 @@ import (
 	"chatroom/utils/JSON"
 	"html/template"
 	"log"
+	"chatroom/utils/Constants"
 )
 
 func GetRoomByBookId(params martini.Params, rend render.Render) {
@@ -46,6 +47,7 @@ func RoomInfo(params martini.Params, rend render.Render) {
 }
 
 func AddRoom(req *http.Request, rend render.Render) {
+	group := Constants.GetGroupFromReq(req)
 	bookId, err := strconv.Atoi(req.FormValue("bookId"))
 	if err != nil {
 		log.Println(err)
@@ -73,7 +75,7 @@ func AddRoom(req *http.Request, rend render.Render) {
 		return
 	}
 	content := template.HTMLEscapeString(req.FormValue("content"))
-	r, err := models.AddRoom(bookId, models.BOOK, info.Data.Id, price, content, startTime)
+	r, err := models.AddRoom(bookId, models.BOOK, info.Data.Id, price, content, startTime, group)
 	if err != nil {
 		log.Println(err)
 		rend.JSON(500, helper.Error(helper.DbError))
@@ -200,6 +202,9 @@ func BuyRoom(params martini.Params, req *http.Request, rend render.Render) {
 }
 
 func DonateRoom(params martini.Params, req *http.Request, rend render.Render) {
+	group := Constants.GetGroupFromReq(req)
+	site := Constants.GetSiteFromReq(req)
+
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
 	if roomId <= 0 {
@@ -231,12 +236,12 @@ func DonateRoom(params martini.Params, req *http.Request, rend render.Render) {
 		return
 	}
 
-	d, errType := models.AddDonate(roomId, giftId, userId, count)
+	d, errType := models.AddDonate(roomId, giftId, userId, count, group, site)
 	if errType != helper.NoError {
 		rend.JSON(200, helper.Error(errType))
 		return
 	}
-	info, errType := httpGet.Donate(req.Cookies(), userId, d.Id, r.GetHostId(), d.Price)
+	info, errType := httpGet.Donate(req.Cookies(), userId, d.Id, r.GetHostId(), d.Price, group, site)
 	if errType != helper.NoError {
 		rend.JSON(200, helper.Error(errType))
 		return
