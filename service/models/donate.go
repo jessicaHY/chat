@@ -8,18 +8,19 @@ import (
 )
 
 type DonateTable struct {
-	Id		int64  	`xorm:"id pk autoincr"`
-	UserId 	int		`xorm:"user_id"`
-	RoomId 	int64	`xorm:"room_id"`
-	GiftId	int64		`xorm:"gift_id"`
-	Count	int		`xorm:"count"`
-	Price	int		`xorm:"price"`
-	Status	int		`xorm:"status"`
-	PayStatus	bool	`xorm:"pay_status"`
-	CreateTime	time.Time 	`xorm:"create_time"`
-	UpdateTime 	time.Time	`xorm:"update_time"`
+	Id            int64    `xorm:"id pk autoincr"`
+	UserId        int        `xorm:"user_id"`
+	RoomId        int64    `xorm:"room_id"`
+	GiftId        int64        `xorm:"gift_id"`
+	Count         int        `xorm:"count"`
+	Price         int        `xorm:"price"`
+	Group         Constants.GroupType        `xorm:"_group"`
+	Site		  Constants.SiteType		`xorm:"site"`
+	Status        int        `xorm:"status"`
+	PayStatus     bool    `xorm:"pay_status"`
+	CreateTime    time.Time    `xorm:"create_time"`
+	UpdateTime    time.Time    `xorm:"update_time"`
 }
-
 
 func ListDonateByRoom(roomId int64) ([]DonateTable, error) {
 	rs := []DonateTable{}
@@ -27,7 +28,7 @@ func ListDonateByRoom(roomId int64) ([]DonateTable, error) {
 	return rs, err
 }
 
-func AddDonate(roomId int64, giftId int64, userId int, count int) (*DonateTable, helper.ErrorType) {
+func AddDonate(roomId int64, giftId int64, userId int, count int, group Constants.GroupType, site Constants.SiteType) (*DonateTable, helper.ErrorType) {
 	g, err := GetGift(giftId)
 	if err != nil {
 		log.Fatalln(err)
@@ -37,7 +38,7 @@ func AddDonate(roomId int64, giftId int64, userId int, count int) (*DonateTable,
 		return nil, helper.EmptyError
 	}
 
-	d, err := addDonate(roomId, giftId, userId, count, g.Price*count)
+	d, err := addDonate(roomId, giftId, userId, count, g.Price*count, group, site)
 	if err != nil {
 		log.Fatalln(err)
 		return nil, helper.DbError
@@ -45,13 +46,15 @@ func AddDonate(roomId int64, giftId int64, userId int, count int) (*DonateTable,
 	return d, helper.NoError
 }
 
-func addDonate(roomId int64, giftId int64, userId int, count int, price int) (*DonateTable, error) {
+func addDonate(roomId int64, giftId int64, userId int, count int, price int, group Constants.GroupType, site Constants.SiteType) (*DonateTable, error) {
 	d := &DonateTable{}
 	d.UserId = userId
 	d.RoomId = roomId
 	d.GiftId = giftId
 	d.Count = count
 	d.Price = price
+	d.Group = group
+	d.Site = site
 	d.Status = Constants.STATUS_NORMAL
 	d.PayStatus = false
 	d.CreateTime = time.Now()

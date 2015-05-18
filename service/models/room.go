@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 	"log"
+	"chatroom/utils/Constants"
 )
 
 type RoomTable struct {
@@ -13,6 +14,7 @@ type RoomTable struct {
 	UserId    int        `xorm:"user_id"  json:"userId"`
 	Price     int        `xorm:"price"  json:"price"`
 	Content   string     `xorm:"content"  json:"content"`
+	Group	Constants.GroupType 	`xorm:"_group"`
 	StartTime time.Time  `xorm:"start_time"  json:"startTime"`
 	Status    RoomStatus `xorm:"status"  json:"status"`
 }
@@ -31,14 +33,14 @@ const (
 	BOOK HostType = 2
 )
 
-func AddRoom(hostId int, hostType HostType, userId int, price int, content string, startTime time.Time) (*RoomTable, error) {
+func AddRoom(hostId int, hostType HostType, userId int, price int, content string, startTime time.Time, group Constants.GroupType) (*RoomTable, error) {
 	hostIt := helper.Int64(hostId)*10000 + helper.Int64(int8(hostType))
 	log.Println(hostIt)
 	count := CountNormalRoom(hostId, hostType)
 	if count > 0 {
 		return nil, errors.New("already exists")
 	}
-	r := &RoomTable{HostIt: hostIt, UserId: userId, Price: price, Content: content, StartTime: startTime, Status: Normal}
+	r := &RoomTable{HostIt: hostIt, UserId: userId, Price: price, Content: content, Group: group, StartTime: startTime, Status: Normal}
 	_, err := engine.InsertOne(r)
 	return r, err
 }
