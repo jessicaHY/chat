@@ -39,7 +39,7 @@ const (
 )
 
 //用于增删改直播，判断用户是否是作者
-func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, error) {
+func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, helper.ErrorType) {
 	info := &UserResult{}
 
 	client := &http.Client{}
@@ -49,26 +49,29 @@ func CheckAuthorRight(cookies []*http.Cookie, bookId int) (*UserResult, error) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return info, err
+		return info, helper.NetworkError
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.IOError
 	}
 	result := string(body)
 	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.DataFormatError
+	}
+	if info.Code == ERROR {
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
-	return info, nil
+	return info, helper.NoError
 }
 
 //get logined user info
-func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error) {
+func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, helper.ErrorType) {
 	info := &UserResult{}
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", Constants.HOST+"/system/room/login/info?roomId="+helper.Itoa64(roomId), nil)
@@ -77,45 +80,51 @@ func GetLoginUserInfo(cookies []*http.Cookie, roomId int64) (*UserResult, error)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return info, err
+		return info, helper.NetworkError
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.IOError
 	}
 	result := string(body)
 	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.DataFormatError
+	}
+	if info.Code == ERROR {
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
-	return info, nil
+	return info, helper.NoError
 }
 
-func GetUserInfo(bookId int, userId int) (*UserResult, error) {
+func GetUserInfo(bookId int, userId int) (*UserResult, helper.ErrorType) {
 	info := &UserResult{}
 	resp, err := http.Get(Constants.HOST + "/system/room/user/info?userId=" + strconv.Itoa(userId) + "&bookId=" + strconv.Itoa(bookId))
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.NetworkError
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.IOError
 	}
 	result := string(body)
 	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.DataFormatError
 	}
 	log.Println(info)
-	return info, nil
+	if info.Code == ERROR {
+		return info, helper.GetWingsErrorType(info.Type)
+	}
+	return info, helper.NoError
 }
 
 func BuyRoom(cookies []*http.Cookie, roomId int64, money int, bookId int) (*UserResult, helper.ErrorType) {

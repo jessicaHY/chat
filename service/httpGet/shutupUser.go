@@ -9,6 +9,7 @@ import (
 	"chatroom/utils/JSON"
 	"chatroom/service/models"
 	"strings"
+	"chatroom/helper"
 )
 
 type ShutResult struct {
@@ -43,11 +44,11 @@ func GetShutUpList(bookId int) (map[int]int, error) {
 	return m, nil
 }
 
-func AddShutUp(cookies []*http.Cookie, roomId int64, userId int, days int) (*ShutResult, error) {
+func AddShutUp(cookies []*http.Cookie, roomId int64, userId int, days int) (*ShutResult, helper.ErrorType) {
 	info := &ShutResult{}
 	r, err := models.GetRoom(roomId)
 	if err != nil || r == nil {
-		return info, err
+		return info, helper.EmptyError
 	}
 
 	client := &http.Client{}
@@ -60,29 +61,32 @@ func AddShutUp(cookies []*http.Cookie, roomId int64, userId int, days int) (*Shu
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.NetworkError
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.IOError
 	}
 	result := string(body)
 	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.DataFormatError
+	}
+	if info.Code == ERROR {
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
-	return info, nil
+	return info, helper.NoError
 }
 
-func DelShutUp(cookies []*http.Cookie, roomId int64, userId int) (*ShutResult, error) {
+func DelShutUp(cookies []*http.Cookie, roomId int64, userId int) (*ShutResult, helper.ErrorType) {
 	info := &ShutResult{}
 	r, err := models.GetRoom(roomId)
 	if err != nil || r == nil {
-		return info, err
+		return info, helper.EmptyError
 	}
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", Constants.HOST+"/system/room/shutup/del",
@@ -94,20 +98,23 @@ func DelShutUp(cookies []*http.Cookie, roomId int64, userId int) (*ShutResult, e
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.NetworkError
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.IOError
 	}
 	result := string(body)
 	log.Println(result)
 	if err = JSON.ParseToStruct(result, info); err != nil {
 		log.Println(err)
-		return info, err
+		return info, helper.DataFormatError
+	}
+	if info.Code == ERROR {
+		return info, helper.GetWingsErrorType(info.Type)
 	}
 	log.Println(info)
-	return info, nil
+	return info, helper.NoError
 }

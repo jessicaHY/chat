@@ -14,26 +14,26 @@ import (
 func AddShutup(req *http.Request, rend render.Render) {
 	roomId := helper.Int64(req.FormValue("roomId"))
 	if roomId <= 0 {
-		rend.JSON(403, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 	userId, err := strconv.Atoi(req.FormValue("userId"))
 	if err != nil {
 		log.Println(err)
-		rend.JSON(403, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 	days, err := strconv.Atoi(req.FormValue("days"))
 	if err != nil {
 		log.Println(err)
-		rend.JSON(403, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 	log.Println("add shutup...", roomId, userId, days)
-	result, err := httpGet.AddShutUp(req.Cookies(), roomId, userId, days )
+	result, errType := httpGet.AddShutUp(req.Cookies(), roomId, userId, days )
 	log.Println(result)
 	if result.Code != httpGet.SUCCESS {
-		rend.JSON(500, helper.Error(helper.DefaultError))
+		rend.JSON(200, helper.Error(errType))
 		return
 	}
 	webSocket.AddShutUp(roomId, userId)
@@ -43,20 +43,20 @@ func AddShutup(req *http.Request, rend render.Render) {
 func DelShutup(req *http.Request, rend render.Render) {
 	roomId := helper.Int64(req.FormValue("roomId"))
 	if roomId <= 0 {
-		rend.JSON(403, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 	userId, err := strconv.Atoi(req.FormValue("userId"))
 	if err != nil {
 		log.Println(err)
-		rend.JSON(403, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 
-	result, err := httpGet.DelShutUp(req.Cookies(), roomId, userId )
+	result, errType := httpGet.DelShutUp(req.Cookies(), roomId, userId )
 	log.Println(result)
 	if result.Code != httpGet.SUCCESS {
-		rend.JSON(500, helper.Error(helper.DefaultError))
+		rend.JSON(200, helper.Error(errType))
 		return
 	}
 	webSocket.DelShutUp(roomId, userId)

@@ -27,6 +27,8 @@ const (
 
 	WingsNoLoginError = 101
 	WingsParamError = 102
+	WingsNoObjectError = 103
+	WingsNoRightError = 104
 	WingsNoEnoughMoneyError = 105
 	WingsSuccessDbFail = 200 //wings操作成功，但是这边存储数据库失败
 
@@ -40,6 +42,10 @@ func GetWingsErrorType(code string) ErrorType {
 		return WingsNoEnoughMoneyError
 	case "ob-5":
 		return WingsParamError
+	case "ob-1":
+		return WingsNoObjectError
+	case "ob-2":
+		return WingsNoRightError
 	default:
 		return DefaultError
 	}

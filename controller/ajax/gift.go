@@ -26,7 +26,7 @@ func ListDonateByRoom(params martini.Params, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
 	if roomId <= 0 {
-		rend.JSON(404, helper.Error(helper.ParamsError))
+		rend.JSON(200, helper.Error(helper.ParamsError))
 		return
 	}
 	rss, err := models.ListDonateByRoom(roomId)

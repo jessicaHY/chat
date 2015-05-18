@@ -131,9 +131,9 @@ func GetUserInfo(roomId int64, bookId int, userId int) *httpGet.UserInfo {
 			}
 			bookId = r.GetHostId()
 		}
-		result, err := httpGet.GetUserInfo(bookId, userId)
-		if err != nil || result.Code != httpGet.SUCCESS {
-			log.Println("get user info from wings err", err)
+		result, errType := httpGet.GetUserInfo(bookId, userId)
+		if errType != helper.NoError || result.Code != httpGet.SUCCESS {
+			log.Println("get user info from wings err", errType)
 			return nil
 		}
 		//save to redis
