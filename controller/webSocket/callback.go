@@ -10,7 +10,6 @@ import (
 	"time"
 	"log"
 	"chatroom/utils/Constants"
-	"chatroom/service/httpGet"
 )
 
 func NotifyAllClients(r *webSocket.Room) {
@@ -228,26 +227,26 @@ func init() {
 		return size == count
 	})
 
-	redis.OnUserInfoEmpty(func(roomId int64, userId int) bool {
-		r, err := models.GetRoom(roomId)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		result, err := httpGet.GetUserInfo(r.GetHostId(), userId)
-		if err != nil || result.Code != httpGet.SUCCESS {
-			return false
-		}
-		b, err := json.Marshal(result.Data)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		count, err := redis.HSetUserInfo(roomId, userId, string(b))
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		return count == 1
-	})
+//	redis.OnUserInfoEmpty(func(roomId int64, userId int) bool {
+//		r, err := models.GetRoom(roomId)
+//		if err != nil {
+//			log.Println(err)
+//			return false
+//		}
+//		result, err := httpGet.GetUserInfo(r.GetHostId(), userId)
+//		if err != nil || result.Code != httpGet.SUCCESS {
+//			return false
+//		}
+//		b, err := json.Marshal(result.Data)
+//		if err != nil {
+//			log.Println(err)
+//			return false
+//		}
+//		count, err := redis.HSetUserInfo(roomId, userId, string(b))
+//		if err != nil {
+//			log.Println(err)
+//			return false
+//		}
+//		return count == 1
+//	})
 }
