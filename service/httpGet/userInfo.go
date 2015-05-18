@@ -19,6 +19,7 @@ type UserInfo struct {
 	FansNum		int		`json:"fansNum"`	//粉丝值
 	FansTitle	string 	`json:"fansTitle"`
 	FansValue	int		`json:"fansValue"`
+	ShutUp		bool	`json:"shutUp"`
 }
 
 type Result struct {

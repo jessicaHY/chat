@@ -91,7 +91,7 @@ func HandlerSocket(context martini.Context, receiver <-chan *webSocket.ChatMsg, 
 func GetUserList(params martini.Params, rend render.Render) {
 	roomId := helper.Int64(params["roomId"])
 	log.Println(roomId)
-	userIds := webSocket.ListUser(roomId)
+	userIds, shutMap := webSocket.ListUser(roomId)
 	log.Println(userIds)
 
 	values, err := redis.HMGetUserInfo(roomId, userIds)
@@ -107,6 +107,11 @@ func GetUserList(params martini.Params, rend render.Render) {
 		if err != nil {
 			log.Println(err)
 			continue
+		}
+		if _, ok := shutMap[m.Id]; ok {
+			m.ShutUp = true
+		} else {
+			m.ShutUp = false
 		}
 		userInfos = append(userInfos, &m)
 	}

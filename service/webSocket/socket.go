@@ -193,7 +193,7 @@ func (r *Room) GetUserCount() [2]int {
 	}
 }
 
-func ListUser(roomId int64) []int {
+func ListUser(roomId int64) ([]int, map[int]int) {
 	r := GetRoom(roomId)
 	userIds := make([]int, 0, len(r.clientsMap))
 	for k, _ := range r.clientsMap {
@@ -201,7 +201,7 @@ func ListUser(roomId int64) []int {
 			userIds = append(userIds, k)
 		}
 	}
-	return userIds;
+	return userIds, r.ShutUpUserIds;
 }
 
 func AddShutUp(roomId int64, userId int) {
@@ -211,6 +211,10 @@ func AddShutUp(roomId int64, userId int) {
 	room, _ := RoomMap[roomId]
 	if room != nil {
 		room.ShutUpUserIds[userId] = userId
+		sos := room.clientsMap[userId]
+		for _, client := range sos {
+			client.out <- &ChatMsg{"shutup", true, false}
+		}
 	}
 }
 
@@ -221,5 +225,9 @@ func DelShutUp(roomId int64, userId int) {
 	room, _ := RoomMap[roomId]
 	if room != nil {
 		delete(room.ShutUpUserIds, userId)
+		sos := room.clientsMap[userId]
+		for _, client := range sos {
+			client.out <- &ChatMsg{"shutup", false, false}
+		}
 	}
 }
